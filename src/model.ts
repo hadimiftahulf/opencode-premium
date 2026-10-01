@@ -180,18 +180,22 @@ export function avatarFrame(pose: AvatarPose, frame: number) {
     p(13, 11, pose === "done" ? 3 : 2, 1, "trimLight")
   }
   if (pose === "compact") {
-    paint(2, 25, 24, 2, "shadow")
-    paint(4, 13, 10, 12, "shirtShade")
-    paint(5, 13, 7, 10, "shirt")
-    paint(4, 12, 8, 3, "shirtLight")
-    paint(5, 13, 5, 3, "shirtShade")
-    paint(4, 15, 4, 1, "shirtLight")
-    head(-6, 1, true)
-    paint(8, 14, 1, 5, "accent")
-    paint(6, 18, 1, 5, "shirtLight")
-    paint(8, 21, 4, 1, "trim")
-    paint(8, 22, 3, 1, "shirtLight")
-    paint(5, 24, 7, 1, "trimLight")
+    paint(2, 27, 25, 1, "shadow")
+    paint(5, 20, 3, 6, "chairEdge")
+    paint(10, 20, 3, 6, "chair")
+    paint(5, 21, 1, 4, "metal")
+    paint(10, 21, 1, 4, "keyShade")
+    paint(4, 26, 4, 1, "trimLight")
+    paint(10, 26, 5, 1, "trimLight")
+    paint(5, 14, 8, 6, "shirt")
+    paint(5, 15, 1, 4, "shirtLight")
+    paint(12, 15, 1, 5, "shirtShade")
+    paint(5, 20, 8, 1, "shirtShade")
+    paint(5, 13, 8, 2, "shirtLight")
+    paint(7, 14, 4, 1, "shirtShade")
+    head(-6, 0, true)
+    paint(7, 15, 1, 3, "accent")
+    paint(10, 15, 1, 3, "accent")
     paint(20, 19, 6, 7, "keyShade")
     paint(20, 18, 6, 2, "ink")
     paint(19, 18, 8, 1, "shirtLight")
@@ -199,20 +203,42 @@ export function avatarFrame(pose: AvatarPose, frame: number) {
     paint(21, 20, 1, 5, "shirtLight")
     paint(24, 20, 1, 5, "shirtShade")
     const step = cycle % 12
-    const lifting = step >= 3 && step < 6
-    paint(10, lifting ? 12 : 16, 3, 3, "shirtLight")
-    paint(12, lifting ? 11 : 15, 3, 2, "shirt")
-    paint(14, lifting ? 10 : 14, 2, 2, "skinLight")
+    const arm = (joints: [number, number][], light: boolean) => {
+      for (let i = 1; i < joints.length; i++) {
+        const [ax, ay] = joints[i - 1]
+        const [bx, by] = joints[i]
+        const distance = Math.max(Math.abs(bx - ax), Math.abs(by - ay), 1)
+        for (let t = 0; t <= distance; t++) {
+          const x = Math.round(ax + (bx - ax) * t / distance)
+          const y = Math.round(ay + (by - ay) * t / distance)
+          paint(x, y, 2, 2, "shirtShade")
+          paint(x, y, 2, 1, light ? "shirtLight" : "shirt")
+        }
+      }
+    }
+    const wrist: [number, number] = step < 3 ? [14, 16] : step < 5 ? [14, 12] : step < 8 ? [16, 13] : [14, 17]
+    arm([[12, 14], [14, 15], wrist], false)
+    paint(wrist[0] + 1, wrist[1], 2, 2, "skinLight")
+    if (step < 3) {
+      arm([[3, 14], [3, 19], [11, 18]], true)
+      paint(12, 18, 2, 2, "skin")
+    } else {
+      arm([[3, 14], [2, 17], [3, 20]], true)
+      paint(3, 21, 2, 2, "skinLight")
+    }
     if (cycle >= 12) {
       paint(21, 20, 3, 2, "keys")
       paint(23, 21, 2, 1, "paperShade")
     }
     if (step < 3) {
-      paint(15, 13, 4 - step, 4 - step, "keys")
-      paint(16, 14, 1, 1, "keyShade")
+      paint(14, 17, 4 - step, 3 - Math.floor(step / 2), "keys")
+      paint(15, 18, 1, 1, "paperShade")
+    } else if (step < 5) {
+      paint(16, 11, 2, 2, "keys")
+      paint(17, 12, 1, 1, "paperShade")
     } else if (step < 10) {
-      const path = [[16, 11], [18, 8], [20, 7], [22, 8], [23, 11], [23, 14], [23, 17]]
-      const [x, y] = path[step - 3]
+      const path = [[18, 10], [21, 8], [23, 10], [23, 13], [23, 16]]
+      const [x, y] = path[step - 5]
       paint(x, y, 2, 2, "keys")
       paint(x + 1, y + 1, 1, 1, "keyShade")
     } else {
@@ -275,20 +301,20 @@ export function avatarFrame(pose: AvatarPose, frame: number) {
     paint(0, 12, 4, 10, "chair")
     paint(1, 10, 3, 3, "chair")
     paint(1, 11, 2, 1, "chairEdge")
-    paint(0, 13, 1, 8, "accent")
-    paint(1, 14, 1, 6, "chairEdge")
+    paint(0, 13, 1, 8, "chairEdge")
+    paint(1, 14, 1, 3, "accent")
     paint(0, 21, 3, 2, "chairEdge")
     paint(2, 23, 10, 1, "chair")
-    paint(2, 24, 3, 1, "accent")
+    paint(2, 24, 3, 1, "chairEdge")
     paint(5, 24, 1, 3, "keyShade")
     paint(2, 27, 8, 1, "chairEdge")
     paint(7, 22, 3, 4, "ink")
     paint(11, 22, 3, 4, "trimLight")
     paint(7, 26, 4, 1, "trim")
     paint(11, 26, 4, 1, "trim")
-    paint(3, 15, 11, 8, "shirt")
-    paint(13, 16, 1, 6, "shirtShade")
-    paint(3, 16, 1, 5, "shirtLight")
+    paint(5, 15, 7, 8, "shirt")
+    paint(4, 16, 1, 6, "shirtLight")
+    paint(11, 17, 1, 5, "shirtShade")
     paint(6, 13, 5, 2, "skinShade")
     paint(4, 14, 9, 1, "shirtLight")
     paint(5, 15, 7, 1, "keyShade")
@@ -309,35 +335,55 @@ export function avatarFrame(pose: AvatarPose, frame: number) {
     paint(12, 23, 16, 1, "trimLight")
     paint(16, 24, 1, 3, "trimLight")
     paint(26, 24, 1, 3, "trimLight")
-    const leftTap = pose === "write" ? phase % 2 : 0
-    const rightTap = pose === "write" ? (phase + 1) % 2 : 0
-    paint(11, 16, 3, 3, "shirt")
-    paint(13, 17, 6, 2, "shirt")
-    paint(18, 18, 1, 1, "shirtLight")
-    if (!smoking) {
-      const handX = pose === "write" ? 19 : 23
-      if (pose !== "write") paint(18, 18, 5, 1, "shirt")
-      paint(handX, 18 + rightTap, 3, 2, "skin")
-      paint(handX, 18 + rightTap, 2, 1, "skinLight")
-      paint(handX + 1, 19 + rightTap, 1, 1, "skinShade")
+    const leftTap = pose === "write" && !smoking ? phase % 2 : 0
+    const rightTap = pose === "write" && !smoking ? (phase + 1) % 2 : 0
+    // Each sleeve follows shoulder -> elbow -> wrist as one continuous volume.
+    // Moving the wrist redraws the entire forearm, so palms never float off a cuff.
+    const sleeve = (joints: readonly (readonly [number, number])[], near: boolean) => {
+      const path: [number, number][] = []
+      for (let i = 1; i < joints.length; i++) {
+        const [ax, ay] = joints[i - 1]
+        const [bx, by] = joints[i]
+        const steps = Math.max(Math.abs(bx - ax), Math.abs(by - ay))
+        for (let t = 0; t <= steps; t++) path.push([
+          Math.round(ax + (bx - ax) * t / Math.max(1, steps)),
+          Math.round(ay + (by - ay) * t / Math.max(1, steps)),
+        ])
+      }
+      for (const [x, y] of path) paint(x - 1, y - 1, 3, 3, "shirtShade")
+      for (const [x, y] of path) paint(x - 1, y - 1, 3, 2, "shirt")
+      if (near) for (const [x, y] of path) paint(x - 1, y - 1, 1, 1, "shirtLight")
+      const [x, y] = joints[joints.length - 1]
+      paint(x, y - 1, 1, 2, "shirtLight")
     }
-    paint(5, 18, 3, 3, "shirt")
-    paint(7, 19, 7, 2, "shirt")
-    paint(12, 19, 2, 1, "shirtLight")
-    paint(14, 18 + leftTap, 3, 2, "skin")
-    paint(14, 18 + leftTap, 2, 1, "skinLight")
-    paint(15, 19 + leftTap, 1, 1, "skinShade")
+    const palm = (x: number, y: number) => {
+      paint(x, y - 1, 3, 2, "skin")
+      paint(x, y - 1, 2, 1, "skinLight")
+      paint(x + 2, y, 1, 1, "skinShade")
+    }
+    const rightX = pose === "write" ? 19 : 23
+    if (!smoking) {
+      sleeve([[11, 16], [14, 18], [rightX - 1, 19 + rightTap]], false)
+      palm(rightX, 19 + rightTap)
+    } else if (cycle < 20) {
+      sleeve([[11, 16], [14, 17], [12, 14]], false)
+      palm(11, 13)
+    } else {
+      sleeve([[11, 16], [14, 18], [16, 18]], false)
+      palm(17, 18)
+    }
+    sleeve([[5, 16], [6, 20], [13, 19 + leftTap]], true)
+    palm(14, 19 + leftTap)
+    // The front key row remains in front of the wrists, below the typing surface.
+    paint(14, 21, 10, 1, "keyboard")
+    paint(16, 21, 5, 1, "keys")
     if (smoking) {
       if (cycle < 20) {
-        paint(11, 15, 3, 4, "shirt")
-        paint(12, 13, 2, 4, "shirt")
-        paint(10, 12, 3, 2, "skinLight")
         paint(9, 12, 4, 1, "keys")
         paint(13, 12, 1, 1, "amber")
       } else {
-        paint(13, 17, 3, 1, "skin")
-        paint(16, 17, 2, 1, "keys")
-        paint(18, 17, 1, 1, "amber")
+        paint(19, 17, 2, 1, "keys")
+        paint(21, 17, 1, 1, "amber")
         paint(9, 12, 4, 2, "smoke")
         paint(12, 10 - phase % 2, 4, 3, "smoke")
         paint(15, 7 - phase % 2, 5, 4, "smoke")

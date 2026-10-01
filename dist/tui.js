@@ -206,18 +206,22 @@ function avatarFrame(pose, frame) {
     p(13, 11, pose === "done" ? 3 : 2, 1, "trimLight");
   };
   if (pose === "compact") {
-    paint(2, 25, 24, 2, "shadow");
-    paint(4, 13, 10, 12, "shirtShade");
-    paint(5, 13, 7, 10, "shirt");
-    paint(4, 12, 8, 3, "shirtLight");
-    paint(5, 13, 5, 3, "shirtShade");
-    paint(4, 15, 4, 1, "shirtLight");
-    head(-6, 1, true);
-    paint(8, 14, 1, 5, "accent");
-    paint(6, 18, 1, 5, "shirtLight");
-    paint(8, 21, 4, 1, "trim");
-    paint(8, 22, 3, 1, "shirtLight");
-    paint(5, 24, 7, 1, "trimLight");
+    paint(2, 27, 25, 1, "shadow");
+    paint(5, 20, 3, 6, "chairEdge");
+    paint(10, 20, 3, 6, "chair");
+    paint(5, 21, 1, 4, "metal");
+    paint(10, 21, 1, 4, "keyShade");
+    paint(4, 26, 4, 1, "trimLight");
+    paint(10, 26, 5, 1, "trimLight");
+    paint(5, 14, 8, 6, "shirt");
+    paint(5, 15, 1, 4, "shirtLight");
+    paint(12, 15, 1, 5, "shirtShade");
+    paint(5, 20, 8, 1, "shirtShade");
+    paint(5, 13, 8, 2, "shirtLight");
+    paint(7, 14, 4, 1, "shirtShade");
+    head(-6, 0, true);
+    paint(7, 15, 1, 3, "accent");
+    paint(10, 15, 1, 3, "accent");
     paint(20, 19, 6, 7, "keyShade");
     paint(20, 18, 6, 2, "ink");
     paint(19, 18, 8, 1, "shirtLight");
@@ -225,20 +229,42 @@ function avatarFrame(pose, frame) {
     paint(21, 20, 1, 5, "shirtLight");
     paint(24, 20, 1, 5, "shirtShade");
     const step = cycle % 12;
-    const lifting = step >= 3 && step < 6;
-    paint(10, lifting ? 12 : 16, 3, 3, "shirtLight");
-    paint(12, lifting ? 11 : 15, 3, 2, "shirt");
-    paint(14, lifting ? 10 : 14, 2, 2, "skinLight");
+    const arm = (joints, light) => {
+      for (let i = 1;i < joints.length; i++) {
+        const [ax, ay] = joints[i - 1];
+        const [bx, by] = joints[i];
+        const distance = Math.max(Math.abs(bx - ax), Math.abs(by - ay), 1);
+        for (let t = 0;t <= distance; t++) {
+          const x = Math.round(ax + (bx - ax) * t / distance);
+          const y = Math.round(ay + (by - ay) * t / distance);
+          paint(x, y, 2, 2, "shirtShade");
+          paint(x, y, 2, 1, light ? "shirtLight" : "shirt");
+        }
+      }
+    };
+    const wrist = step < 3 ? [14, 16] : step < 5 ? [14, 12] : step < 8 ? [16, 13] : [14, 17];
+    arm([[12, 14], [14, 15], wrist], false);
+    paint(wrist[0] + 1, wrist[1], 2, 2, "skinLight");
+    if (step < 3) {
+      arm([[3, 14], [3, 19], [11, 18]], true);
+      paint(12, 18, 2, 2, "skin");
+    } else {
+      arm([[3, 14], [2, 17], [3, 20]], true);
+      paint(3, 21, 2, 2, "skinLight");
+    }
     if (cycle >= 12) {
       paint(21, 20, 3, 2, "keys");
       paint(23, 21, 2, 1, "paperShade");
     }
     if (step < 3) {
-      paint(15, 13, 4 - step, 4 - step, "keys");
-      paint(16, 14, 1, 1, "keyShade");
+      paint(14, 17, 4 - step, 3 - Math.floor(step / 2), "keys");
+      paint(15, 18, 1, 1, "paperShade");
+    } else if (step < 5) {
+      paint(16, 11, 2, 2, "keys");
+      paint(17, 12, 1, 1, "paperShade");
     } else if (step < 10) {
-      const path = [[16, 11], [18, 8], [20, 7], [22, 8], [23, 11], [23, 14], [23, 17]];
-      const [x, y] = path[step - 3];
+      const path = [[18, 10], [21, 8], [23, 10], [23, 13], [23, 16]];
+      const [x, y] = path[step - 5];
       paint(x, y, 2, 2, "keys");
       paint(x + 1, y + 1, 1, 1, "keyShade");
     } else {
@@ -300,20 +326,20 @@ function avatarFrame(pose, frame) {
     paint(0, 12, 4, 10, "chair");
     paint(1, 10, 3, 3, "chair");
     paint(1, 11, 2, 1, "chairEdge");
-    paint(0, 13, 1, 8, "accent");
-    paint(1, 14, 1, 6, "chairEdge");
+    paint(0, 13, 1, 8, "chairEdge");
+    paint(1, 14, 1, 3, "accent");
     paint(0, 21, 3, 2, "chairEdge");
     paint(2, 23, 10, 1, "chair");
-    paint(2, 24, 3, 1, "accent");
+    paint(2, 24, 3, 1, "chairEdge");
     paint(5, 24, 1, 3, "keyShade");
     paint(2, 27, 8, 1, "chairEdge");
     paint(7, 22, 3, 4, "ink");
     paint(11, 22, 3, 4, "trimLight");
     paint(7, 26, 4, 1, "trim");
     paint(11, 26, 4, 1, "trim");
-    paint(3, 15, 11, 8, "shirt");
-    paint(13, 16, 1, 6, "shirtShade");
-    paint(3, 16, 1, 5, "shirtLight");
+    paint(5, 15, 7, 8, "shirt");
+    paint(4, 16, 1, 6, "shirtLight");
+    paint(11, 17, 1, 5, "shirtShade");
     paint(6, 13, 5, 2, "skinShade");
     paint(4, 14, 9, 1, "shirtLight");
     paint(5, 15, 7, 1, "keyShade");
@@ -333,36 +359,57 @@ function avatarFrame(pose, frame) {
     paint(12, 23, 16, 1, "trimLight");
     paint(16, 24, 1, 3, "trimLight");
     paint(26, 24, 1, 3, "trimLight");
-    const leftTap = pose === "write" ? phase % 2 : 0;
-    const rightTap = pose === "write" ? (phase + 1) % 2 : 0;
-    paint(11, 16, 3, 3, "shirt");
-    paint(13, 17, 6, 2, "shirt");
-    paint(18, 18, 1, 1, "shirtLight");
+    const leftTap = pose === "write" && !smoking ? phase % 2 : 0;
+    const rightTap = pose === "write" && !smoking ? (phase + 1) % 2 : 0;
+    const sleeve = (joints, near) => {
+      const path = [];
+      for (let i = 1;i < joints.length; i++) {
+        const [ax, ay] = joints[i - 1];
+        const [bx, by] = joints[i];
+        const steps = Math.max(Math.abs(bx - ax), Math.abs(by - ay));
+        for (let t = 0;t <= steps; t++)
+          path.push([
+            Math.round(ax + (bx - ax) * t / Math.max(1, steps)),
+            Math.round(ay + (by - ay) * t / Math.max(1, steps))
+          ]);
+      }
+      for (const [x, y] of path)
+        paint(x - 1, y - 1, 3, 3, "shirtShade");
+      for (const [x, y] of path)
+        paint(x - 1, y - 1, 3, 2, "shirt");
+      if (near)
+        for (const [x, y] of path)
+          paint(x - 1, y - 1, 1, 1, "shirtLight");
+      const [x, y] = joints[joints.length - 1];
+      paint(x, y - 1, 1, 2, "shirtLight");
+    };
+    const palm = (x, y) => {
+      paint(x, y - 1, 3, 2, "skin");
+      paint(x, y - 1, 2, 1, "skinLight");
+      paint(x + 2, y, 1, 1, "skinShade");
+    };
+    const rightX = pose === "write" ? 19 : 23;
     if (!smoking) {
-      const handX = pose === "write" ? 19 : 23;
-      if (pose !== "write")
-        paint(18, 18, 5, 1, "shirt");
-      paint(handX, 18 + rightTap, 3, 2, "skin");
-      paint(handX, 18 + rightTap, 2, 1, "skinLight");
-      paint(handX + 1, 19 + rightTap, 1, 1, "skinShade");
+      sleeve([[11, 16], [14, 18], [rightX - 1, 19 + rightTap]], false);
+      palm(rightX, 19 + rightTap);
+    } else if (cycle < 20) {
+      sleeve([[11, 16], [14, 17], [12, 14]], false);
+      palm(11, 13);
+    } else {
+      sleeve([[11, 16], [14, 18], [16, 18]], false);
+      palm(17, 18);
     }
-    paint(5, 18, 3, 3, "shirt");
-    paint(7, 19, 7, 2, "shirt");
-    paint(12, 19, 2, 1, "shirtLight");
-    paint(14, 18 + leftTap, 3, 2, "skin");
-    paint(14, 18 + leftTap, 2, 1, "skinLight");
-    paint(15, 19 + leftTap, 1, 1, "skinShade");
+    sleeve([[5, 16], [6, 20], [13, 19 + leftTap]], true);
+    palm(14, 19 + leftTap);
+    paint(14, 21, 10, 1, "keyboard");
+    paint(16, 21, 5, 1, "keys");
     if (smoking) {
       if (cycle < 20) {
-        paint(11, 15, 3, 4, "shirt");
-        paint(12, 13, 2, 4, "shirt");
-        paint(10, 12, 3, 2, "skinLight");
         paint(9, 12, 4, 1, "keys");
         paint(13, 12, 1, 1, "amber");
       } else {
-        paint(13, 17, 3, 1, "skin");
-        paint(16, 17, 2, 1, "keys");
-        paint(18, 17, 1, 1, "amber");
+        paint(19, 17, 2, 1, "keys");
+        paint(21, 17, 1, 1, "amber");
         paint(9, 12, 4, 2, "smoke");
         paint(12, 10 - phase % 2, 4, 3, "smoke");
         paint(15, 7 - phase % 2, 5, 4, "smoke");
@@ -746,7 +793,9 @@ function holdKeyboardPose(source, duration = 5000, compactDuration = 7200, sessi
       return;
     }
     const remaining = (previous === "compact" ? compactDuration : duration) - (Date.now() - started);
-    if ((previous === "write" || previous === "compact") && next !== previous && remaining > 0 && next !== "wait" && next !== "error" && next !== "compact") {
+    const urgent = next === "error" || next === "wait" && source().label === "Menunggu jawaban";
+    const interrupt = urgent || previous !== "compact" && next === "wait";
+    if ((previous === "write" || previous === "compact") && next !== previous && remaining > 0 && !interrupt && next !== "compact") {
       const timer = setTimeout(() => {
         started = Date.now();
         setPose(source().pose);
@@ -1084,15 +1133,22 @@ function Overview(props) {
         return data().used !== undefined;
       },
       get children() {
-        var _el$40 = _$createElement("text"), _el$41 = _$createTextNode(` token`);
+        var _el$40 = _$createElement("text"), _el$41 = _$createTextNode(` token \xB7 laporan model terakhir`);
         _$insertNode(_el$40, _el$41);
         _$insert(_el$40, () => compact(data().used ?? 0), _el$41);
-        _$insert(_el$40, (() => {
-          var _c$2 = _$memo(() => data().percent === undefined);
-          return () => _c$2() ? "" : ` \xB7 ${data().percent}% konteks`;
-        })(), null);
-        _$effect((_$p) => _$setProp(_el$40, "fg", (data().percent ?? 0) >= 85 ? theme().warning : theme().textMuted, _$p));
+        _$effect((_$p) => _$setProp(_el$40, "fg", theme().textMuted, _$p));
         return _el$40;
+      }
+    }), null);
+    _$insert(_el$35, _$createComponent(Show, {
+      get when() {
+        return data().used !== undefined;
+      },
+      get children() {
+        var _el$42 = _$createElement("text");
+        _$insertNode(_el$42, _$createTextNode(`Bukan ukuran konteks sesudah DCP.`));
+        _$effect((_$p) => _$setProp(_el$42, "fg", theme().textMuted, _$p));
+        return _el$42;
       }
     }), null);
     _$insert(_el$35, _$createComponent(Show, {
@@ -1100,12 +1156,12 @@ function Overview(props) {
         return data().cost > 0;
       },
       get children() {
-        var _el$42 = _$createElement("text"), _el$43 = _$createTextNode(`$`), _el$44 = _$createTextNode(` tercatat`);
-        _$insertNode(_el$42, _el$43);
-        _$insertNode(_el$42, _el$44);
-        _$insert(_el$42, () => data().cost.toFixed(4), _el$44);
-        _$effect((_$p) => _$setProp(_el$42, "fg", theme().textMuted, _$p));
-        return _el$42;
+        var _el$44 = _$createElement("text"), _el$45 = _$createTextNode(`$`), _el$46 = _$createTextNode(` tercatat`);
+        _$insertNode(_el$44, _el$45);
+        _$insertNode(_el$44, _el$46);
+        _$insert(_el$44, () => data().cost.toFixed(4), _el$46);
+        _$effect((_$p) => _$setProp(_el$44, "fg", theme().textMuted, _$p));
+        return _el$44;
       }
     }), null);
     _$insert(_el$34, _$createComponent(ObservedWait, {
@@ -1138,34 +1194,23 @@ function Overview(props) {
         return activity().attention > 0;
       },
       get children() {
-        var _el$45 = _$createElement("box"), _el$46 = _$createElement("text"), _el$47 = _$createElement("b"), _el$48 = _$createTextNode(`Butuh jawaban \xB7 `), _el$49 = _$createElement("text");
-        _$insertNode(_el$45, _el$46);
-        _$insertNode(_el$45, _el$49);
-        _$insertNode(_el$46, _el$47);
+        var _el$47 = _$createElement("box"), _el$48 = _$createElement("text"), _el$49 = _$createElement("b"), _el$50 = _$createTextNode(`Butuh jawaban \xB7 `), _el$51 = _$createElement("text");
         _$insertNode(_el$47, _el$48);
-        _$insert(_el$47, () => activity().attention, null);
-        _$insertNode(_el$49, _$createTextNode(`Periksa permintaan di percakapan.`));
+        _$insertNode(_el$47, _el$51);
+        _$insertNode(_el$48, _el$49);
+        _$insertNode(_el$49, _el$50);
+        _$insert(_el$49, () => activity().attention, null);
+        _$insertNode(_el$51, _$createTextNode(`Periksa permintaan di percakapan.`));
         _$effect((_p$) => {
           var _v$1 = theme().warning, _v$10 = theme().textMuted;
-          _v$1 !== _p$.e && (_p$.e = _$setProp(_el$46, "fg", _v$1, _p$.e));
-          _v$10 !== _p$.t && (_p$.t = _$setProp(_el$49, "fg", _v$10, _p$.t));
+          _v$1 !== _p$.e && (_p$.e = _$setProp(_el$48, "fg", _v$1, _p$.e));
+          _v$10 !== _p$.t && (_p$.t = _$setProp(_el$51, "fg", _v$10, _p$.t));
           return _p$;
         }, {
           e: undefined,
           t: undefined
         });
-        return _el$45;
-      }
-    }), null);
-    _$insert(_el$34, _$createComponent(Show, {
-      get when() {
-        return (data().percent ?? 0) >= 85;
-      },
-      get children() {
-        var _el$51 = _$createElement("text");
-        _$insertNode(_el$51, _$createTextNode(`Konteks mendekati batas.`));
-        _$effect((_$p) => _$setProp(_el$51, "fg", theme().warning, _$p));
-        return _el$51;
+        return _el$47;
       }
     }), null);
     _$insert(_el$34, _$createComponent(Show, {
@@ -1182,35 +1227,35 @@ function Overview(props) {
             return mcp().slice(0, limit());
           },
           children: (row) => (() => {
-            var _el$102 = _$createElement("box"), _el$103 = _$createElement("text"), _el$104 = _$createTextNode(` \xB7 `);
-            _$insertNode(_el$102, _el$103);
-            _$insertNode(_el$103, _el$104);
-            _$setProp(_el$103, "wrapMode", "char");
-            _$insert(_el$103, () => row.item.name, _el$104);
-            _$insert(_el$103, (() => {
-              var _c$4 = _$memo(() => row.ended === undefined);
-              return () => _c$4() ? `${row.item.calls.length} panggilan` : "Baru berakhir";
+            var _el$106 = _$createElement("box"), _el$107 = _$createElement("text"), _el$108 = _$createTextNode(` \xB7 `);
+            _$insertNode(_el$106, _el$107);
+            _$insertNode(_el$107, _el$108);
+            _$setProp(_el$107, "wrapMode", "char");
+            _$insert(_el$107, () => row.item.name, _el$108);
+            _$insert(_el$107, (() => {
+              var _c$2 = _$memo(() => row.ended === undefined);
+              return () => _c$2() ? `${row.item.calls.length} panggilan` : "Baru berakhir";
             })(), null);
-            _$insert(_el$102, _$createComponent(For, {
+            _$insert(_el$106, _$createComponent(For, {
               get each() {
                 return row.item.calls.slice(0, 2);
               },
               children: (call) => (() => {
-                var _el$105 = _$createElement("text"), _el$106 = _$createTextNode(` \xB7 `);
-                _$insertNode(_el$105, _el$106);
-                _$setProp(_el$105, "wrapMode", "word");
-                _$insert(_el$105, () => detail(call).status, _el$106);
-                _$insert(_el$105, () => detail(call).action, null);
-                _$insert(_el$105, (() => {
-                  var _c$5 = _$memo(() => !!detail(call).target);
-                  return () => _c$5() ? ` \xB7 ${detail(call).target}` : "";
+                var _el$109 = _$createElement("text"), _el$110 = _$createTextNode(` \xB7 `);
+                _$insertNode(_el$109, _el$110);
+                _$setProp(_el$109, "wrapMode", "word");
+                _$insert(_el$109, () => detail(call).status, _el$110);
+                _$insert(_el$109, () => detail(call).action, null);
+                _$insert(_el$109, (() => {
+                  var _c$3 = _$memo(() => !!detail(call).target);
+                  return () => _c$3() ? ` \xB7 ${detail(call).target}` : "";
                 })(), null);
-                _$effect((_$p) => _$setProp(_el$105, "fg", theme().textMuted, _$p));
-                return _el$105;
+                _$effect((_$p) => _$setProp(_el$109, "fg", theme().textMuted, _$p));
+                return _el$109;
               })()
             }), null);
-            _$effect((_$p) => _$setProp(_el$103, "fg", theme().text, _$p));
-            return _el$102;
+            _$effect((_$p) => _$setProp(_el$107, "fg", theme().text, _$p));
+            return _el$106;
           })()
         }), null);
         _$insert(_el$53, _$createComponent(Show, {
@@ -1245,29 +1290,29 @@ function Overview(props) {
             return agents().slice(0, limit());
           },
           children: (row) => (() => {
-            var _el$107 = _$createElement("box"), _el$108 = _$createElement("text"), _el$109 = _$createTextNode(` \xB7 `);
-            _$insertNode(_el$107, _el$108);
-            _$insertNode(_el$108, _el$109);
-            _$setProp(_el$108, "wrapMode", "char");
-            _$insert(_el$108, () => row.item.name, _el$109);
-            _$insert(_el$108, (() => {
-              var _c$6 = _$memo(() => row.ended === undefined);
-              return () => _c$6() ? row.item.label : "Baru berakhir";
+            var _el$111 = _$createElement("box"), _el$112 = _$createElement("text"), _el$113 = _$createTextNode(` \xB7 `);
+            _$insertNode(_el$111, _el$112);
+            _$insertNode(_el$112, _el$113);
+            _$setProp(_el$112, "wrapMode", "char");
+            _$insert(_el$112, () => row.item.name, _el$113);
+            _$insert(_el$112, (() => {
+              var _c$4 = _$memo(() => row.ended === undefined);
+              return () => _c$4() ? row.item.label : "Baru berakhir";
             })(), null);
-            _$insert(_el$107, _$createComponent(Show, {
+            _$insert(_el$111, _$createComponent(Show, {
               get when() {
                 return row.item.target;
               },
               get children() {
-                var _el$110 = _$createElement("text");
-                _$setProp(_el$110, "wrapMode", "word");
-                _$insert(_el$110, () => row.item.target);
-                _$effect((_$p) => _$setProp(_el$110, "fg", theme().textMuted, _$p));
-                return _el$110;
+                var _el$114 = _$createElement("text");
+                _$setProp(_el$114, "wrapMode", "word");
+                _$insert(_el$114, () => row.item.target);
+                _$effect((_$p) => _$setProp(_el$114, "fg", theme().textMuted, _$p));
+                return _el$114;
               }
             }), null);
-            _$effect((_$p) => _$setProp(_el$108, "fg", theme().text, _$p));
-            return _el$107;
+            _$effect((_$p) => _$setProp(_el$112, "fg", theme().text, _$p));
+            return _el$111;
           })()
         }), null);
         _$insert(_el$60, _$createComponent(Show, {
@@ -1301,17 +1346,17 @@ function Overview(props) {
             return tools().slice(0, limit());
           },
           children: (row) => (() => {
-            var _el$111 = _$createElement("text"), _el$112 = _$createTextNode(` \xB7 `);
-            _$insertNode(_el$111, _el$112);
-            _$setProp(_el$111, "wrapMode", "word");
-            _$insert(_el$111, () => detail(row.item).action, _el$112);
-            _$insert(_el$111, () => detail(row.item).status, null);
-            _$insert(_el$111, (() => {
-              var _c$7 = _$memo(() => !!detail(row.item).target);
-              return () => _c$7() ? ` \xB7 ${detail(row.item).target}` : "";
+            var _el$115 = _$createElement("text"), _el$116 = _$createTextNode(` \xB7 `);
+            _$insertNode(_el$115, _el$116);
+            _$setProp(_el$115, "wrapMode", "word");
+            _$insert(_el$115, () => detail(row.item).action, _el$116);
+            _$insert(_el$115, () => detail(row.item).status, null);
+            _$insert(_el$115, (() => {
+              var _c$5 = _$memo(() => !!detail(row.item).target);
+              return () => _c$5() ? ` \xB7 ${detail(row.item).target}` : "";
             })(), null);
-            _$effect((_$p) => _$setProp(_el$111, "fg", theme().text, _$p));
-            return _el$111;
+            _$effect((_$p) => _$setProp(_el$115, "fg", theme().text, _$p));
+            return _el$115;
           })()
         }), null);
         _$insert(_el$67, _$createComponent(Show, {
@@ -1348,15 +1393,15 @@ function Overview(props) {
             return todos().slice(0, limit());
           },
           children: (row) => (() => {
-            var _el$113 = _$createElement("text");
-            _$setProp(_el$113, "wrapMode", "word");
-            _$insert(_el$113, (() => {
-              var _c$8 = _$memo(() => row.ended !== undefined);
-              return () => _c$8() ? "Baru berakhir \xB7 " : row.item.status === "in_progress" ? "> " : "\xB7 ";
+            var _el$117 = _$createElement("text");
+            _$setProp(_el$117, "wrapMode", "word");
+            _$insert(_el$117, (() => {
+              var _c$6 = _$memo(() => row.ended !== undefined);
+              return () => _c$6() ? "Baru berakhir \xB7 " : row.item.status === "in_progress" ? "> " : "\xB7 ";
             })(), null);
-            _$insert(_el$113, () => row.item.content, null);
-            _$effect((_$p) => _$setProp(_el$113, "fg", row.ended === undefined && row.item.status === "in_progress" ? theme().text : theme().textMuted, _$p));
-            return _el$113;
+            _$insert(_el$117, () => row.item.content, null);
+            _$effect((_$p) => _$setProp(_el$117, "fg", row.ended === undefined && row.item.status === "in_progress" ? theme().text : theme().textMuted, _$p));
+            return _el$117;
           })()
         }), null);
         _$insert(_el$74, _$createComponent(Show, {
@@ -1391,23 +1436,23 @@ function Overview(props) {
             return activity().latest;
           },
           children: (latest) => (() => {
-            var _el$114 = _$createElement("box"), _el$115 = _$createElement("text"), _el$116 = _$createElement("text");
-            _$insertNode(_el$114, _el$115);
-            _$insertNode(_el$114, _el$116);
-            _$setProp(_el$115, "wrapMode", "word");
-            _$insert(_el$115, () => activityDetail(latest()).target || activityDetail(latest()).action);
-            _$setProp(_el$116, "wrapMode", "word");
-            _$insert(_el$116, () => activityDetail(latest()).result || "Masih diproses; belum ada hasil akhir.");
+            var _el$118 = _$createElement("box"), _el$119 = _$createElement("text"), _el$120 = _$createElement("text");
+            _$insertNode(_el$118, _el$119);
+            _$insertNode(_el$118, _el$120);
+            _$setProp(_el$119, "wrapMode", "word");
+            _$insert(_el$119, () => activityDetail(latest()).target || activityDetail(latest()).action);
+            _$setProp(_el$120, "wrapMode", "word");
+            _$insert(_el$120, () => activityDetail(latest()).result || "Masih diproses; belum ada hasil akhir.");
             _$effect((_p$) => {
               var _v$13 = theme().text, _v$14 = theme().textMuted;
-              _v$13 !== _p$.e && (_p$.e = _$setProp(_el$115, "fg", _v$13, _p$.e));
-              _v$14 !== _p$.t && (_p$.t = _$setProp(_el$116, "fg", _v$14, _p$.t));
+              _v$13 !== _p$.e && (_p$.e = _$setProp(_el$119, "fg", _v$13, _p$.e));
+              _v$14 !== _p$.t && (_p$.t = _$setProp(_el$120, "fg", _v$14, _p$.t));
               return _p$;
             }, {
               e: undefined,
               t: undefined
             });
-            return _el$114;
+            return _el$118;
           })()
         }), (() => {
           var _el$82 = _$createElement("text"), _el$83 = _$createTextNode(` berkas berubah di sesi ini \xB7 `), _el$84 = _$createTextNode(` tugas tersisa`);
@@ -1431,7 +1476,7 @@ function Overview(props) {
         return props.api;
       },
       name: "context",
-      title: "Konteks sesi",
+      title: "Laporan token provider",
       get summary() {
         return _$memo(() => data().used === undefined)() ? "Token belum dilaporkan" : `${compact(data().used ?? NaN)} token \xB7 laporan terakhir`;
       },
@@ -1450,20 +1495,28 @@ function Overview(props) {
           _$effect((_$p) => _$setProp(_el$88, "fg", theme().textMuted, _$p));
           return _el$88;
         })(), (() => {
-          var _el$90 = _$createElement("text"), _el$91 = _$createTextNode(`Konteks \xB7 `);
-          _$insertNode(_el$90, _el$91);
-          _$insert(_el$90, (() => {
-            var _c$3 = _$memo(() => data().percent === undefined);
-            return () => _c$3() ? "belum tersedia" : `${data().percent}% terpakai`;
-          })(), null);
+          var _el$90 = _$createElement("text");
+          _$insertNode(_el$90, _$createTextNode(`Konteks aktif DCP \xB7 belum diukur`));
           _$effect((_$p) => _$setProp(_el$90, "fg", theme().textMuted, _$p));
           return _el$90;
         })(), (() => {
-          var _el$92 = _$createElement("text"), _el$93 = _$createTextNode(`Biaya tercatat \xB7 $`);
-          _$insertNode(_el$92, _el$93);
-          _$insert(_el$92, () => data().cost.toFixed(4), null);
+          var _el$92 = _$createElement("text");
+          _$insertNode(_el$92, _$createTextNode(`Laporan ini menjumlahkan input, output, reasoning, dan cache dari pesan model terakhir yang melaporkan penggunaan.`));
+          _$setProp(_el$92, "wrapMode", "word");
           _$effect((_$p) => _$setProp(_el$92, "fg", theme().textMuted, _$p));
           return _el$92;
+        })(), (() => {
+          var _el$94 = _$createElement("text");
+          _$insertNode(_el$94, _$createTextNode(`Periksa /dcp untuk statistik kompresi. Angka provider bukan ukuran pesan yang akan dikirim sesudah DCP.`));
+          _$setProp(_el$94, "wrapMode", "word");
+          _$effect((_$p) => _$setProp(_el$94, "fg", theme().textMuted, _$p));
+          return _el$94;
+        })(), (() => {
+          var _el$96 = _$createElement("text"), _el$97 = _$createTextNode(`Biaya tercatat \xB7 $`);
+          _$insertNode(_el$96, _el$97);
+          _$insert(_el$96, () => data().cost.toFixed(4), null);
+          _$effect((_$p) => _$setProp(_el$96, "fg", theme().textMuted, _$p));
+          return _el$96;
         })()];
       }
     }), null);
@@ -1483,42 +1536,42 @@ function Overview(props) {
           },
           get fallback() {
             return (() => {
-              var _el$117 = _$createElement("text");
-              _$insertNode(_el$117, _$createTextNode(`Belum ada daftar tugas di sesi ini.`));
-              _$effect((_$p) => _$setProp(_el$117, "fg", theme().textMuted, _$p));
-              return _el$117;
+              var _el$121 = _$createElement("text");
+              _$insertNode(_el$121, _$createTextNode(`Belum ada daftar tugas di sesi ini.`));
+              _$effect((_$p) => _$setProp(_el$121, "fg", theme().textMuted, _$p));
+              return _el$121;
             })();
           },
           get children() {
             return [(() => {
-              var _el$94 = _$createElement("text"), _el$95 = _$createTextNode(` berjalan \xB7 `), _el$96 = _$createTextNode(` antre`);
-              _$insertNode(_el$94, _el$95);
-              _$insertNode(_el$94, _el$96);
-              _$insert(_el$94, () => activity().todos.filter((todo) => todo.status === "in_progress").length, _el$95);
-              _$insert(_el$94, () => activity().todos.filter((todo) => todo.status === "pending").length, _el$96);
-              _$effect((_$p) => _$setProp(_el$94, "fg", theme().textMuted, _$p));
-              return _el$94;
+              var _el$98 = _$createElement("text"), _el$99 = _$createTextNode(` berjalan \xB7 `), _el$100 = _$createTextNode(` antre`);
+              _$insertNode(_el$98, _el$99);
+              _$insertNode(_el$98, _el$100);
+              _$insert(_el$98, () => activity().todos.filter((todo) => todo.status === "in_progress").length, _el$99);
+              _$insert(_el$98, () => activity().todos.filter((todo) => todo.status === "pending").length, _el$100);
+              _$effect((_$p) => _$setProp(_el$98, "fg", theme().textMuted, _$p));
+              return _el$98;
             })(), _$createComponent(For, {
               get each() {
                 return props.api.state.session.todo(props.id).filter((todo) => todo.status === "completed");
               },
               children: (todo) => (() => {
-                var _el$119 = _$createElement("text"), _el$120 = _$createTextNode(`Selesai \xB7 `);
-                _$insertNode(_el$119, _el$120);
-                _$setProp(_el$119, "wrapMode", "word");
-                _$insert(_el$119, () => todo.content, null);
-                _$effect((_$p) => _$setProp(_el$119, "fg", theme().textMuted, _$p));
-                return _el$119;
+                var _el$123 = _$createElement("text"), _el$124 = _$createTextNode(`Selesai \xB7 `);
+                _$insertNode(_el$123, _el$124);
+                _$setProp(_el$123, "wrapMode", "word");
+                _$insert(_el$123, () => todo.content, null);
+                _$effect((_$p) => _$setProp(_el$123, "fg", theme().textMuted, _$p));
+                return _el$123;
               })()
             }), _$createComponent(Show, {
               get when() {
                 return activity().todos.length > 0;
               },
               get children() {
-                var _el$97 = _$createElement("text");
-                _$insertNode(_el$97, _$createTextNode(`Tugas aktif ditampilkan di Rencana.`));
-                _$effect((_$p) => _$setProp(_el$97, "fg", theme().textMuted, _$p));
-                return _el$97;
+                var _el$101 = _$createElement("text");
+                _$insertNode(_el$101, _$createTextNode(`Tugas aktif ditampilkan di Rencana.`));
+                _$effect((_$p) => _$setProp(_el$101, "fg", theme().textMuted, _$p));
+                return _el$101;
               }
             })];
           }
@@ -1536,30 +1589,30 @@ function Overview(props) {
       },
       get children() {
         return [(() => {
-          var _el$99 = _$createElement("text");
-          _$insertNode(_el$99, _$createTextNode(`Terhubung bukan berarti sedang dipakai.`));
-          _$effect((_$p) => _$setProp(_el$99, "fg", theme().textMuted, _$p));
-          return _el$99;
+          var _el$103 = _$createElement("text");
+          _$insertNode(_el$103, _$createTextNode(`Terhubung bukan berarti sedang dipakai.`));
+          _$effect((_$p) => _$setProp(_el$103, "fg", theme().textMuted, _$p));
+          return _el$103;
         })(), _$createComponent(For, {
           get each() {
             return props.api.state.mcp();
           },
           get fallback() {
             return (() => {
-              var _el$121 = _$createElement("text");
-              _$insertNode(_el$121, _$createTextNode(`Tidak ada server MCP.`));
-              _$effect((_$p) => _$setProp(_el$121, "fg", theme().textMuted, _$p));
-              return _el$121;
+              var _el$125 = _$createElement("text");
+              _$insertNode(_el$125, _$createTextNode(`Tidak ada server MCP.`));
+              _$effect((_$p) => _$setProp(_el$125, "fg", theme().textMuted, _$p));
+              return _el$125;
             })();
           },
           children: (server) => (() => {
-            var _el$123 = _$createElement("text"), _el$124 = _$createTextNode(` \xB7 `);
-            _$insertNode(_el$123, _el$124);
-            _$setProp(_el$123, "wrapMode", "char");
-            _$insert(_el$123, () => server.name, _el$124);
-            _$insert(_el$123, () => server.status, null);
-            _$effect((_$p) => _$setProp(_el$123, "fg", server.status === "connected" ? theme().text : theme().warning, _$p));
-            return _el$123;
+            var _el$127 = _$createElement("text"), _el$128 = _$createTextNode(` \xB7 `);
+            _$insertNode(_el$127, _el$128);
+            _$setProp(_el$127, "wrapMode", "char");
+            _$insert(_el$127, () => server.name, _el$128);
+            _$insert(_el$127, () => server.status, null);
+            _$effect((_$p) => _$setProp(_el$127, "fg", server.status === "connected" ? theme().text : theme().warning, _$p));
+            return _el$127;
           })()
         })];
       }
@@ -1575,43 +1628,43 @@ function Overview(props) {
       },
       get children() {
         return [(() => {
-          var _el$101 = _$createElement("text");
-          _$setProp(_el$101, "wrapMode", "char");
-          _$insert(_el$101, () => props.api.state.path.directory);
-          _$effect((_$p) => _$setProp(_el$101, "fg", theme().textMuted, _$p));
-          return _el$101;
+          var _el$105 = _$createElement("text");
+          _$setProp(_el$105, "wrapMode", "char");
+          _$insert(_el$105, () => props.api.state.path.directory);
+          _$effect((_$p) => _$setProp(_el$105, "fg", theme().textMuted, _$p));
+          return _el$105;
         })(), _$createComponent(For, {
           get each() {
             return props.api.state.session.diff(props.id);
           },
           get fallback() {
             return (() => {
-              var _el$125 = _$createElement("text");
-              _$insertNode(_el$125, _$createTextNode(`Belum ada perubahan berkas di sesi ini.`));
-              _$effect((_$p) => _$setProp(_el$125, "fg", theme().textMuted, _$p));
-              return _el$125;
+              var _el$129 = _$createElement("text");
+              _$insertNode(_el$129, _$createTextNode(`Belum ada perubahan berkas di sesi ini.`));
+              _$effect((_$p) => _$setProp(_el$129, "fg", theme().textMuted, _$p));
+              return _el$129;
             })();
           },
           children: (file) => (() => {
-            var _el$127 = _$createElement("box"), _el$128 = _$createElement("text"), _el$129 = _$createElement("text"), _el$130 = _$createTextNode(`+`), _el$131 = _$createTextNode(` / -`);
-            _$insertNode(_el$127, _el$128);
-            _$insertNode(_el$127, _el$129);
-            _$setProp(_el$128, "wrapMode", "char");
-            _$insert(_el$128, () => file.file);
-            _$insertNode(_el$129, _el$130);
-            _$insertNode(_el$129, _el$131);
-            _$insert(_el$129, () => file.additions, _el$131);
-            _$insert(_el$129, () => file.deletions, null);
+            var _el$131 = _$createElement("box"), _el$132 = _$createElement("text"), _el$133 = _$createElement("text"), _el$134 = _$createTextNode(`+`), _el$135 = _$createTextNode(` / -`);
+            _$insertNode(_el$131, _el$132);
+            _$insertNode(_el$131, _el$133);
+            _$setProp(_el$132, "wrapMode", "char");
+            _$insert(_el$132, () => file.file);
+            _$insertNode(_el$133, _el$134);
+            _$insertNode(_el$133, _el$135);
+            _$insert(_el$133, () => file.additions, _el$135);
+            _$insert(_el$133, () => file.deletions, null);
             _$effect((_p$) => {
               var _v$15 = theme().text, _v$16 = theme().textMuted;
-              _v$15 !== _p$.e && (_p$.e = _$setProp(_el$128, "fg", _v$15, _p$.e));
-              _v$16 !== _p$.t && (_p$.t = _$setProp(_el$129, "fg", _v$16, _p$.t));
+              _v$15 !== _p$.e && (_p$.e = _$setProp(_el$132, "fg", _v$15, _p$.e));
+              _v$16 !== _p$.t && (_p$.t = _$setProp(_el$133, "fg", _v$16, _p$.t));
               return _p$;
             }, {
               e: undefined,
               t: undefined
             });
-            return _el$127;
+            return _el$131;
           })()
         })];
       }
@@ -1641,14 +1694,14 @@ function ResponsiveDock(props) {
   const open = () => props.api.ui.dialog.replace(() => _$createComponent(props.api.ui.Dialog, {
     onClose: () => props.api.ui.dialog.clear(),
     get children() {
-      var _el$132 = _$createElement("box"), _el$133 = _$createElement("text"), _el$134 = _$createElement("b"), _el$136 = _$createTextNode(` \xB7 Esc tutup`), _el$137 = _$createElement("scrollbox");
-      _$insertNode(_el$132, _el$133);
-      _$insertNode(_el$132, _el$137);
-      _$setProp(_el$132, "padding", 1);
-      _$insertNode(_el$133, _el$134);
-      _$insertNode(_el$133, _el$136);
-      _$insertNode(_el$134, _$createTextNode(`Studio \xB7 Detail sesi`));
-      _$insert(_el$137, _$createComponent(Overview, {
+      var _el$136 = _$createElement("box"), _el$137 = _$createElement("text"), _el$138 = _$createElement("b"), _el$140 = _$createTextNode(` \xB7 Esc tutup`), _el$141 = _$createElement("scrollbox");
+      _$insertNode(_el$136, _el$137);
+      _$insertNode(_el$136, _el$141);
+      _$setProp(_el$136, "padding", 1);
+      _$insertNode(_el$137, _el$138);
+      _$insertNode(_el$137, _el$140);
+      _$insertNode(_el$138, _$createTextNode(`Studio \xB7 Detail sesi`));
+      _$insert(_el$141, _$createComponent(Overview, {
         get api() {
           return props.api;
         },
@@ -1665,14 +1718,14 @@ function ResponsiveDock(props) {
       }));
       _$effect((_p$) => {
         var _v$17 = theme().primary, _v$18 = Math.max(5, size().height - 10);
-        _v$17 !== _p$.e && (_p$.e = _$setProp(_el$133, "fg", _v$17, _p$.e));
-        _v$18 !== _p$.t && (_p$.t = _$setProp(_el$137, "height", _v$18, _p$.t));
+        _v$17 !== _p$.e && (_p$.e = _$setProp(_el$137, "fg", _v$17, _p$.e));
+        _v$18 !== _p$.t && (_p$.t = _$setProp(_el$141, "height", _v$18, _p$.t));
         return _p$;
       }, {
         e: undefined,
         t: undefined
       });
-      return _el$132;
+      return _el$136;
     }
   }));
   const unregister = props.api.command?.register(() => [{
@@ -1691,19 +1744,19 @@ function ResponsiveDock(props) {
       return !props.sidebarVisible;
     },
     get children() {
-      var _el$138 = _$createElement("box"), _el$139 = _$createElement("box"), _el$140 = _$createElement("box"), _el$141 = _$createElement("text"), _el$142 = _$createElement("b"), _el$143 = _$createTextNode(`STUDIO \xB7 `), _el$144 = _$createElement("text"), _el$145 = _$createElement("text"), _el$146 = _$createElement("text"), _el$147 = _$createElement("text"), _el$148 = _$createElement("text"), _el$149 = _$createElement("box"), _el$150 = _$createElement("text");
-      _$insertNode(_el$138, _el$139);
-      _$insertNode(_el$138, _el$140);
-      _$setProp(_el$138, "flexDirection", "row");
-      _$setProp(_el$138, "width", "100%");
-      _$setProp(_el$138, "height", 8);
-      _$setProp(_el$138, "flexShrink", 0);
-      _$setProp(_el$138, "gap", 1);
-      _$setProp(_el$138, "paddingLeft", 1);
-      _$setProp(_el$138, "paddingRight", 1);
-      _$setProp(_el$139, "width", 14);
-      _$setProp(_el$139, "flexShrink", 0);
-      _$insert(_el$139, _$createComponent(Companion, {
+      var _el$142 = _$createElement("box"), _el$143 = _$createElement("box"), _el$144 = _$createElement("box"), _el$145 = _$createElement("text"), _el$146 = _$createElement("b"), _el$147 = _$createTextNode(`STUDIO \xB7 `), _el$148 = _$createElement("text"), _el$149 = _$createElement("text"), _el$150 = _$createElement("text"), _el$151 = _$createElement("text"), _el$152 = _$createElement("text"), _el$153 = _$createElement("box"), _el$154 = _$createElement("text");
+      _$insertNode(_el$142, _el$143);
+      _$insertNode(_el$142, _el$144);
+      _$setProp(_el$142, "flexDirection", "row");
+      _$setProp(_el$142, "width", "100%");
+      _$setProp(_el$142, "height", 8);
+      _$setProp(_el$142, "flexShrink", 0);
+      _$setProp(_el$142, "gap", 1);
+      _$setProp(_el$142, "paddingLeft", 1);
+      _$setProp(_el$142, "paddingRight", 1);
+      _$setProp(_el$143, "width", 14);
+      _$setProp(_el$143, "flexShrink", 0);
+      _$insert(_el$143, _$createComponent(Companion, {
         get api() {
           return props.api;
         },
@@ -1719,62 +1772,62 @@ function ResponsiveDock(props) {
         mini: true,
         portraitOnly: true
       }));
-      _$insertNode(_el$140, _el$141);
-      _$insertNode(_el$140, _el$144);
-      _$insertNode(_el$140, _el$145);
-      _$insertNode(_el$140, _el$146);
-      _$insertNode(_el$140, _el$147);
-      _$insertNode(_el$140, _el$148);
-      _$insertNode(_el$140, _el$149);
-      _$setProp(_el$140, "flexGrow", 1);
-      _$setProp(_el$140, "minWidth", 0);
-      _$setProp(_el$140, "flexShrink", 1);
-      _$insertNode(_el$141, _el$142);
-      _$setProp(_el$141, "height", 1);
-      _$insertNode(_el$142, _el$143);
-      _$insert(_el$142, () => data().agent ?? "Sesi", null);
-      _$setProp(_el$144, "height", 1);
-      _$insert(_el$144, () => avatarState(activity(), props.compacting).label);
+      _$insertNode(_el$144, _el$145);
+      _$insertNode(_el$144, _el$148);
+      _$insertNode(_el$144, _el$149);
+      _$insertNode(_el$144, _el$150);
+      _$insertNode(_el$144, _el$151);
+      _$insertNode(_el$144, _el$152);
+      _$insertNode(_el$144, _el$153);
+      _$setProp(_el$144, "flexGrow", 1);
+      _$setProp(_el$144, "minWidth", 0);
+      _$setProp(_el$144, "flexShrink", 1);
+      _$insertNode(_el$145, _el$146);
       _$setProp(_el$145, "height", 1);
-      _$insert(_el$145, () => data().model, null);
-      _$insert(_el$145, (() => {
-        var _c$9 = _$memo(() => data().used === undefined);
-        return () => _c$9() ? "" : ` \xB7 ${compact(data().used ?? NaN)} token`;
-      })(), null);
-      _$setProp(_el$146, "height", 1);
-      _$insert(_el$146, (() => {
-        var _c$0 = _$memo(() => !!activity().attention);
-        return () => _c$0() ? `${activity().attention} permintaan menunggu jawaban` : `MCP ${activity().mcp.length} aktif \xB7 Agent ${activity().agents.length} \xB7 Tugas ${activity().completed}/${activity().total}`;
-      })());
-      _$setProp(_el$147, "height", 1);
-      _$insert(_el$147, (() => {
-        var _c$1 = _$memo(() => !!activity().latest);
-        return () => _c$1() ? `${activityDetail(activity().latest).status} \xB7 ${activityDetail(activity().latest).action}` : "Belum ada aktivitas tool";
-      })());
+      _$insertNode(_el$146, _el$147);
+      _$insert(_el$146, () => data().agent ?? "Sesi", null);
       _$setProp(_el$148, "height", 1);
-      _$insert(_el$148, (() => {
-        var _c$10 = _$memo(() => !!activity().latest);
-        return () => _c$10() ? activityDetail(activity().latest).target : "";
+      _$insert(_el$148, () => avatarState(activity(), props.compacting).label);
+      _$setProp(_el$149, "height", 1);
+      _$insert(_el$149, () => data().model, null);
+      _$insert(_el$149, (() => {
+        var _c$7 = _$memo(() => data().used === undefined);
+        return () => _c$7() ? "" : ` \xB7 ${compact(data().used ?? NaN)} token (laporan)`;
+      })(), null);
+      _$setProp(_el$150, "height", 1);
+      _$insert(_el$150, (() => {
+        var _c$8 = _$memo(() => !!activity().attention);
+        return () => _c$8() ? `${activity().attention} permintaan menunggu jawaban` : `MCP ${activity().mcp.length} aktif \xB7 Agent ${activity().agents.length} \xB7 Tugas ${activity().completed}/${activity().total}`;
       })());
-      _$insertNode(_el$149, _el$150);
-      _$setProp(_el$149, "onMouseDown", (event) => {
+      _$setProp(_el$151, "height", 1);
+      _$insert(_el$151, (() => {
+        var _c$9 = _$memo(() => !!activity().latest);
+        return () => _c$9() ? `${activityDetail(activity().latest).status} \xB7 ${activityDetail(activity().latest).action}` : "Belum ada aktivitas tool";
+      })());
+      _$setProp(_el$152, "height", 1);
+      _$insert(_el$152, (() => {
+        var _c$0 = _$memo(() => !!activity().latest);
+        return () => _c$0() ? activityDetail(activity().latest).target : "";
+      })());
+      _$insertNode(_el$153, _el$154);
+      _$setProp(_el$153, "onMouseDown", (event) => {
         if (event.button === 0) {
           event.stopPropagation();
           open();
         }
       });
-      _$insertNode(_el$150, _$createTextNode(`/studio-panel \xB7 detail`));
-      _$setProp(_el$150, "height", 1);
+      _$insertNode(_el$154, _$createTextNode(`/studio-panel \xB7 detail`));
+      _$setProp(_el$154, "height", 1);
       _$effect((_p$) => {
         var _v$19 = theme().backgroundPanel, _v$20 = theme().primary, _v$21 = theme().text, _v$22 = theme().textMuted, _v$23 = activity().attention ? theme().warning : theme().textMuted, _v$24 = theme().text, _v$25 = theme().textMuted, _v$26 = theme().primary;
-        _v$19 !== _p$.e && (_p$.e = _$setProp(_el$138, "backgroundColor", _v$19, _p$.e));
-        _v$20 !== _p$.t && (_p$.t = _$setProp(_el$141, "fg", _v$20, _p$.t));
-        _v$21 !== _p$.a && (_p$.a = _$setProp(_el$144, "fg", _v$21, _p$.a));
-        _v$22 !== _p$.o && (_p$.o = _$setProp(_el$145, "fg", _v$22, _p$.o));
-        _v$23 !== _p$.i && (_p$.i = _$setProp(_el$146, "fg", _v$23, _p$.i));
-        _v$24 !== _p$.n && (_p$.n = _$setProp(_el$147, "fg", _v$24, _p$.n));
-        _v$25 !== _p$.s && (_p$.s = _$setProp(_el$148, "fg", _v$25, _p$.s));
-        _v$26 !== _p$.h && (_p$.h = _$setProp(_el$150, "fg", _v$26, _p$.h));
+        _v$19 !== _p$.e && (_p$.e = _$setProp(_el$142, "backgroundColor", _v$19, _p$.e));
+        _v$20 !== _p$.t && (_p$.t = _$setProp(_el$145, "fg", _v$20, _p$.t));
+        _v$21 !== _p$.a && (_p$.a = _$setProp(_el$148, "fg", _v$21, _p$.a));
+        _v$22 !== _p$.o && (_p$.o = _$setProp(_el$149, "fg", _v$22, _p$.o));
+        _v$23 !== _p$.i && (_p$.i = _$setProp(_el$150, "fg", _v$23, _p$.i));
+        _v$24 !== _p$.n && (_p$.n = _$setProp(_el$151, "fg", _v$24, _p$.n));
+        _v$25 !== _p$.s && (_p$.s = _$setProp(_el$152, "fg", _v$25, _p$.s));
+        _v$26 !== _p$.h && (_p$.h = _$setProp(_el$154, "fg", _v$26, _p$.h));
         return _p$;
       }, {
         e: undefined,
@@ -1786,7 +1839,7 @@ function ResponsiveDock(props) {
         s: undefined,
         h: undefined
       });
-      return _el$138;
+      return _el$142;
     }
   });
 }
@@ -1796,47 +1849,47 @@ function StatusBar(props) {
   const mcp = () => props.api.state.mcp();
   const plugins = () => props.api.plugins.list().filter((item) => item.source !== "internal");
   return (() => {
-    var _el$152 = _$createElement("box"), _el$153 = _$createElement("text"), _el$154 = _$createElement("b"), _el$161 = _$createElement("text");
-    _$insertNode(_el$152, _el$153);
-    _$insertNode(_el$152, _el$161);
-    _$setProp(_el$152, "flexDirection", "row");
-    _$setProp(_el$152, "justifyContent", "space-between");
-    _$setProp(_el$152, "paddingLeft", 1);
-    _$setProp(_el$152, "paddingRight", 1);
-    _$setProp(_el$152, "width", "100%");
-    _$insertNode(_el$153, _el$154);
-    _$insertNode(_el$154, _$createTextNode(`STUDIO`));
-    _$insert(_el$152, _$createComponent(Show, {
+    var _el$156 = _$createElement("box"), _el$157 = _$createElement("text"), _el$158 = _$createElement("b"), _el$165 = _$createElement("text");
+    _$insertNode(_el$156, _el$157);
+    _$insertNode(_el$156, _el$165);
+    _$setProp(_el$156, "flexDirection", "row");
+    _$setProp(_el$156, "justifyContent", "space-between");
+    _$setProp(_el$156, "paddingLeft", 1);
+    _$setProp(_el$156, "paddingRight", 1);
+    _$setProp(_el$156, "width", "100%");
+    _$insertNode(_el$157, _el$158);
+    _$insertNode(_el$158, _$createTextNode(`STUDIO`));
+    _$insert(_el$156, _$createComponent(Show, {
       get when() {
         return size().width >= 65;
       },
       get children() {
-        var _el$156 = _$createElement("text"), _el$157 = _$createTextNode(`/`), _el$158 = _$createTextNode(` MCP \xB7 `), _el$159 = _$createTextNode(`/`), _el$160 = _$createTextNode(` plugin TUI aktif`);
-        _$insertNode(_el$156, _el$157);
-        _$insertNode(_el$156, _el$158);
-        _$insertNode(_el$156, _el$159);
-        _$insertNode(_el$156, _el$160);
-        _$insert(_el$156, () => mcp().filter((item) => item.status === "connected").length, _el$157);
-        _$insert(_el$156, () => mcp().length, _el$158);
-        _$insert(_el$156, () => plugins().filter((item) => item.active).length, _el$159);
-        _$insert(_el$156, () => plugins().length, _el$160);
-        _$effect((_$p) => _$setProp(_el$156, "fg", theme().textMuted, _$p));
-        return _el$156;
+        var _el$160 = _$createElement("text"), _el$161 = _$createTextNode(`/`), _el$162 = _$createTextNode(` MCP \xB7 `), _el$163 = _$createTextNode(`/`), _el$164 = _$createTextNode(` plugin TUI aktif`);
+        _$insertNode(_el$160, _el$161);
+        _$insertNode(_el$160, _el$162);
+        _$insertNode(_el$160, _el$163);
+        _$insertNode(_el$160, _el$164);
+        _$insert(_el$160, () => mcp().filter((item) => item.status === "connected").length, _el$161);
+        _$insert(_el$160, () => mcp().length, _el$162);
+        _$insert(_el$160, () => plugins().filter((item) => item.active).length, _el$163);
+        _$insert(_el$160, () => plugins().length, _el$164);
+        _$effect((_$p) => _$setProp(_el$160, "fg", theme().textMuted, _$p));
+        return _el$160;
       }
-    }), _el$161);
-    _$insert(_el$161, () => props.api.state.vcs?.branch ?? "lokal");
+    }), _el$165);
+    _$insert(_el$165, () => props.api.state.vcs?.branch ?? "lokal");
     _$effect((_p$) => {
       var _v$27 = theme().backgroundPanel, _v$28 = theme().primary, _v$29 = theme().textMuted;
-      _v$27 !== _p$.e && (_p$.e = _$setProp(_el$152, "backgroundColor", _v$27, _p$.e));
-      _v$28 !== _p$.t && (_p$.t = _$setProp(_el$153, "fg", _v$28, _p$.t));
-      _v$29 !== _p$.a && (_p$.a = _$setProp(_el$161, "fg", _v$29, _p$.a));
+      _v$27 !== _p$.e && (_p$.e = _$setProp(_el$156, "backgroundColor", _v$27, _p$.e));
+      _v$28 !== _p$.t && (_p$.t = _$setProp(_el$157, "fg", _v$28, _p$.t));
+      _v$29 !== _p$.a && (_p$.a = _$setProp(_el$165, "fg", _v$29, _p$.a));
       return _p$;
     }, {
       e: undefined,
       t: undefined,
       a: undefined
     });
-    return _el$152;
+    return _el$156;
   })();
 }
 var plugin = {
@@ -1878,61 +1931,61 @@ var plugin = {
         },
         home_bottom() {
           return (() => {
-            var _el$162 = _$createElement("box"), _el$163 = _$createElement("text");
-            _$insertNode(_el$162, _el$163);
-            _$setProp(_el$162, "width", "100%");
-            _$setProp(_el$162, "maxWidth", 96);
-            _$setProp(_el$162, "paddingLeft", 2);
-            _$setProp(_el$162, "paddingRight", 2);
-            _$setProp(_el$162, "marginTop", 1);
-            _$insertNode(_el$163, _$createTextNode(`/ perintah \xB7 @ berkas & agent \xB7 ! shell`));
-            _$effect((_$p) => _$setProp(_el$163, "fg", api.theme.current.textMuted, _$p));
-            return _el$162;
+            var _el$166 = _$createElement("box"), _el$167 = _$createElement("text");
+            _$insertNode(_el$166, _el$167);
+            _$setProp(_el$166, "width", "100%");
+            _$setProp(_el$166, "maxWidth", 96);
+            _$setProp(_el$166, "paddingLeft", 2);
+            _$setProp(_el$166, "paddingRight", 2);
+            _$setProp(_el$166, "marginTop", 1);
+            _$insertNode(_el$167, _$createTextNode(`/ perintah \xB7 @ berkas & agent \xB7 ! shell`));
+            _$effect((_$p) => _$setProp(_el$167, "fg", api.theme.current.textMuted, _$p));
+            return _el$166;
           })();
         },
         home_footer() {
           return (() => {
-            var _el$165 = _$createElement("text"), _el$166 = _$createTextNode(`SAFFTEEN STUDIO / OpenCode `);
-            _$insertNode(_el$165, _el$166);
-            _$insert(_el$165, () => api.app.version, null);
-            _$effect((_$p) => _$setProp(_el$165, "fg", api.theme.current.textMuted, _$p));
-            return _el$165;
+            var _el$169 = _$createElement("text"), _el$170 = _$createTextNode(`SAFFTEEN STUDIO / OpenCode `);
+            _$insertNode(_el$169, _el$170);
+            _$insert(_el$169, () => api.app.version, null);
+            _$effect((_$p) => _$setProp(_el$169, "fg", api.theme.current.textMuted, _$p));
+            return _el$169;
           })();
         },
         sidebar_title(_ctx, props) {
           return (() => {
-            var _el$167 = _$createElement("box"), _el$168 = _$createElement("text"), _el$169 = _$createElement("b"), _el$171 = _$createElement("text"), _el$172 = _$createElement("b");
-            _$insertNode(_el$167, _el$168);
-            _$insertNode(_el$167, _el$171);
-            _$setProp(_el$167, "gap", 1);
-            _$setProp(_el$167, "paddingBottom", 1);
-            _$insertNode(_el$168, _el$169);
-            _$insertNode(_el$169, _$createTextNode(`STUDIO / SESI`));
+            var _el$171 = _$createElement("box"), _el$172 = _$createElement("text"), _el$173 = _$createElement("b"), _el$175 = _$createElement("text"), _el$176 = _$createElement("b");
             _$insertNode(_el$171, _el$172);
-            _$setProp(_el$171, "wrapMode", "word");
-            _$insert(_el$172, () => props.title);
-            _$insert(_el$167, _$createComponent(Show, {
+            _$insertNode(_el$171, _el$175);
+            _$setProp(_el$171, "gap", 1);
+            _$setProp(_el$171, "paddingBottom", 1);
+            _$insertNode(_el$172, _el$173);
+            _$insertNode(_el$173, _$createTextNode(`STUDIO / SESI`));
+            _$insertNode(_el$175, _el$176);
+            _$setProp(_el$175, "wrapMode", "word");
+            _$insert(_el$176, () => props.title);
+            _$insert(_el$171, _$createComponent(Show, {
               get when() {
                 return props.share_url;
               },
               get children() {
-                var _el$173 = _$createElement("text");
-                _$setProp(_el$173, "wrapMode", "char");
-                _$insert(_el$173, () => props.share_url);
-                _$effect((_$p) => _$setProp(_el$173, "fg", api.theme.current.textMuted, _$p));
-                return _el$173;
+                var _el$177 = _$createElement("text");
+                _$setProp(_el$177, "wrapMode", "char");
+                _$insert(_el$177, () => props.share_url);
+                _$effect((_$p) => _$setProp(_el$177, "fg", api.theme.current.textMuted, _$p));
+                return _el$177;
               }
             }), null);
             _$effect((_p$) => {
               var _v$30 = api.theme.current.primary, _v$31 = api.theme.current.text;
-              _v$30 !== _p$.e && (_p$.e = _$setProp(_el$168, "fg", _v$30, _p$.e));
-              _v$31 !== _p$.t && (_p$.t = _$setProp(_el$171, "fg", _v$31, _p$.t));
+              _v$30 !== _p$.e && (_p$.e = _$setProp(_el$172, "fg", _v$30, _p$.e));
+              _v$31 !== _p$.t && (_p$.t = _$setProp(_el$175, "fg", _v$31, _p$.t));
               return _p$;
             }, {
               e: undefined,
               t: undefined
             });
-            return _el$167;
+            return _el$171;
           })();
         },
         sidebar_content(_ctx, props) {
@@ -1956,17 +2009,17 @@ var plugin = {
         },
         sidebar_footer() {
           return (() => {
-            var _el$174 = _$createElement("text");
-            _$insertNode(_el$174, _$createTextNode(`SAFFTEEN STUDIO \xB7 0.1`));
-            _$effect((_$p) => _$setProp(_el$174, "fg", api.theme.current.textMuted, _$p));
-            return _el$174;
+            var _el$178 = _$createElement("text");
+            _$insertNode(_el$178, _$createTextNode(`SAFFTEEN STUDIO \xB7 0.1`));
+            _$effect((_$p) => _$setProp(_el$178, "fg", api.theme.current.textMuted, _$p));
+            return _el$178;
           })();
         },
         app_bottom() {
           return (() => {
-            var _el$176 = _$createElement("box");
-            _$setProp(_el$176, "flexShrink", 0);
-            _$insert(_el$176, _$createComponent(Show, {
+            var _el$180 = _$createElement("box");
+            _$setProp(_el$180, "flexShrink", 0);
+            _$insert(_el$180, _$createComponent(Show, {
               get when() {
                 return sessionID();
               },
@@ -1986,10 +2039,10 @@ var plugin = {
                 }
               })
             }), null);
-            _$insert(_el$176, _$createComponent(StatusBar, {
+            _$insert(_el$180, _$createComponent(StatusBar, {
               api
             }), null);
-            return _el$176;
+            return _el$180;
           })();
         }
       }
