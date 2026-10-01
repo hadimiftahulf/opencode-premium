@@ -2,6 +2,9 @@ import type { TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { useTerminalDimensions } from "@opentui/solid"
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, type Accessor, type JSX } from "solid-js"
 import { activityDetail, avatarFrame, avatarState, compact, sidebarActivity, sessionMetrics } from "./model"
+import { prayerFrame } from "./prayer"
+import { createPrayerReminder, prayerReminders } from "./prayer-reminder"
+import { prayerDesktopNotification } from "./prayer-audio"
 
 export function retainActivity<T>(source: Accessor<T[]>, key: (item: T) => string, session: Accessor<string>, delay = 4000) {
   const [rows, setRows] = createSignal<{ item: T; ended?: number }[]>([])
@@ -200,7 +203,9 @@ export function holdKeyboardPose(source: Accessor<ReturnType<typeof avatarState>
       return
     }
     const remaining = (previous === "compact" ? compactDuration : duration) - (Date.now() - started)
-    if ((previous === "write" || previous === "compact") && next !== previous && remaining > 0 && next !== "wait" && next !== "error" && next !== "compact") {
+    const urgent = next === "error" || (next === "wait" && source().label === "Menunggu jawaban")
+    const interrupt = urgent || (previous !== "compact" && next === "wait")
+    if ((previous === "write" || previous === "compact") && next !== previous && remaining > 0 && !interrupt && next !== "compact") {
       const timer = setTimeout(() => { started = Date.now(); setPose(source().pose) }, remaining)
       onCleanup(() => clearTimeout(timer))
       return
@@ -212,6 +217,7 @@ export function holdKeyboardPose(source: Accessor<ReturnType<typeof avatarState>
 }
 
 export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeof sidebarActivity>; motion?: boolean; compacting?: boolean; mini?: boolean; portraitOnly?: boolean }) {
+  const prayer = () => props.activity.attention || props.activity.latest?.state.status === "error" ? undefined : prayerReminders.get(props.api)?.view()
   const state = createMemo(() => avatarState(props.activity, props.compacting), undefined, {
     equals: (previous, next) => previous.pose === next.pose && previous.label === next.label && previous.moving === next.moving,
   })
@@ -229,7 +235,10 @@ export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeo
     onCleanup(() => clearInterval(timer))
   })
   const theme = () => props.api.theme.current
-  const pixels = createMemo(() => avatarFrame(pose(), frame()))
+  const pixels = createMemo(() => {
+    const current = prayer()
+    return current ? prayerFrame(props.motion === false ? "stand" : current.step.pose) : avatarFrame(pose(), frame())
+  })
   const mini = () => props.mini || size().height < 28
   const rows = createMemo(() => Array.from({ length: mini() ? 7 : 14 }, (_, index) => index))
   const columns = createMemo(() => Array.from({ length: mini() ? 14 : 28 }, (_, index) => index))
@@ -248,7 +257,7 @@ export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeo
         </text>}</For>
       </box>
     <Show when={!props.portraitOnly}>
-    <text fg={theme().text}><b>{state().label}</b></text>
+    <text fg={theme().text}><b>{prayer()?.label ?? state().label}</b></text>
     <Show when={props.activity.latest}>{(latest) => <box>
       <text fg={theme().textMuted}>Aktivitas terakhir · {activityDetail(latest()).status}</text>
       <text fg={theme().text} wrapMode="word"><b>{activityDetail(latest()).action}</b></text>
@@ -279,7 +288,7 @@ export function Welcome(props: { api: TuiPluginApi; motion?: boolean; speechInte
           <Companion api={props.api} activity={idle} motion={props.motion} mini={narrow() || size().height < 32} portraitOnly />
         </box>
         <box flexGrow={1} flexShrink={1} minWidth={0}>
-          <text fg={theme().textMuted}>Santai · siap bantu</text>
+          <text fg={theme().textMuted}>{prayerReminders.get(props.api)?.view()?.label ?? "Santai · siap bantu"}</text>
           <text fg={theme().text} wrapMode="word">{phrases[phrase()]}</text>
         </box>
       </box>
@@ -333,10 +342,11 @@ export function Overview(props: { api: TuiPluginApi; id: string; motion?: boolea
         <text fg={theme().text} wrapMode="char"><b>{data().model}</b></text>
         <text fg={theme().textMuted}>{data().agent ?? "Sesi baru"} · {activity().status?.type === "busy" ? "Bekerja" : activity().status?.type === "retry" ? "Mencoba ulang" : "Siap"}</text>
         <Show when={data().used !== undefined}>
-          <text fg={(data().percent ?? 0) >= 85 ? theme().warning : theme().textMuted}>
-            {compact(data().used ?? 0)} token{data().percent === undefined ? "" : ` · ${data().percent}% konteks`}
+          <text fg={theme().textMuted}>
+            {compact(data().used ?? 0)} token · laporan model terakhir
           </text>
         </Show>
+        <Show when={data().used !== undefined}><text fg={theme().textMuted}>Bukan ukuran konteks sesudah DCP.</text></Show>
         <Show when={data().cost > 0}><text fg={theme().textMuted}>${data().cost.toFixed(4)} tercatat</text></Show>
       </box>
       <ObservedWait reason={waitingReason(props.api, props.id, activity(), props.compacting)} session={props.id} />
@@ -346,9 +356,6 @@ export function Overview(props: { api: TuiPluginApi; id: string; motion?: boolea
           <text fg={theme().warning}><b>Butuh jawaban · {activity().attention}</b></text>
           <text fg={theme().textMuted}>Periksa permintaan di percakapan.</text>
         </box>
-      </Show>
-      <Show when={(data().percent ?? 0) >= 85}>
-        <text fg={theme().warning}>Konteks mendekati batas.</text>
       </Show>
       <Show when={mcp().length > 0}>
         <box>
@@ -395,10 +402,12 @@ export function Overview(props: { api: TuiPluginApi; id: string; motion?: boolea
         <text fg={theme().textMuted}>{props.api.state.session.diff(props.id).length} berkas berubah di sesi ini · {activity().todos.length} tugas tersisa</text>
         <text fg={theme().textMuted} wrapMode="word">Hasil tes: lihat keluaran pengujian di percakapan; status tool bukan bukti tes lulus.</text>
       </InfoCard>
-      <InfoCard api={props.api} name="context" title="Konteks sesi" summary={data().used === undefined ? "Token belum dilaporkan" : `${compact(data().used ?? NaN)} token · laporan terakhir`}>
+      <InfoCard api={props.api} name="context" title="Laporan token provider" summary={data().used === undefined ? "Token belum dilaporkan" : `${compact(data().used ?? NaN)} token · laporan terakhir`}>
         <text fg={theme().text} wrapMode="char">{data().model}</text>
         <text fg={theme().textMuted} wrapMode="char">Provider · {data().provider}</text>
-        <text fg={theme().textMuted}>Konteks · {data().percent === undefined ? "belum tersedia" : `${data().percent}% terpakai`}</text>
+        <text fg={theme().textMuted}>Konteks aktif DCP · belum diukur</text>
+        <text fg={theme().textMuted} wrapMode="word">Laporan ini menjumlahkan input, output, reasoning, dan cache dari pesan model terakhir yang melaporkan penggunaan.</text>
+        <text fg={theme().textMuted} wrapMode="word">Periksa /dcp untuk statistik kompresi. Angka provider bukan ukuran pesan yang akan dikirim sesudah DCP.</text>
         <text fg={theme().textMuted}>Biaya tercatat · ${data().cost.toFixed(4)}</text>
       </InfoCard>
       <InfoCard api={props.api} name="progress" title="Progres tugas" summary={`${activity().completed}/${activity().total} selesai · ${activity().todos.length} tersisa`}>
@@ -456,8 +465,8 @@ export function ResponsiveDock(props: { api: TuiPluginApi; id: string; sidebarVi
       <box width={14} flexShrink={0}><Companion api={props.api} activity={activity()} motion={props.motion} compacting={props.compacting} mini portraitOnly /></box>
       <box flexGrow={1} minWidth={0} flexShrink={1}>
         <text height={1} fg={theme().primary}><b>STUDIO · {data().agent ?? "Sesi"}</b></text>
-        <text height={1} fg={theme().text}>{avatarState(activity(), props.compacting).label}</text>
-        <text height={1} fg={theme().textMuted}>{data().model}{data().used === undefined ? "" : ` · ${compact(data().used ?? NaN)} token`}</text>
+        <text height={1} fg={theme().text}>{activity().attention ? avatarState(activity(), props.compacting).label : prayerReminders.get(props.api)?.view()?.label ?? avatarState(activity(), props.compacting).label}</text>
+        <text height={1} fg={theme().textMuted}>{data().model}{data().used === undefined ? "" : ` · ${compact(data().used ?? NaN)} token (laporan)`}</text>
         <text height={1} fg={activity().attention ? theme().warning : theme().textMuted}>{activity().attention ? `${activity().attention} permintaan menunggu jawaban` : `MCP ${activity().mcp.length} aktif · Agent ${activity().agents.length} · Tugas ${activity().completed}/${activity().total}`}</text>
         <text height={1} fg={theme().text}>{activity().latest ? `${activityDetail(activity().latest!).status} · ${activityDetail(activity().latest!).action}` : "Belum ada aktivitas tool"}</text>
         <text height={1} fg={theme().textMuted}>{activity().latest ? activityDetail(activity().latest!).target : ""}</text>
@@ -488,6 +497,8 @@ function StatusBar(props: { api: TuiPluginApi }) {
 const plugin: TuiPluginModule = {
   id: "saffteen-studio",
   tui: async (api, options) => {
+    prayerReminders.set(api, createPrayerReminder(api, options?.prayer, prayerDesktopNotification))
+    api.lifecycle.onDispose(() => { prayerReminders.delete(api) })
     attentionFeedback(api)
     visualFeedback(api)
     const compacting = compactionMonitor(api)

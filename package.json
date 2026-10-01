@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./server": "./dist/skill-router.js",
     "./tui": "./dist/tui.js"
   },
   "scripts": {
@@ -25,6 +26,7 @@
     "typescript": "^5.9.0"
   },
   "dependencies": {
+    "adhan": "^4.4.6",
     "node-notifier": "^10.0.1"
   }
 }

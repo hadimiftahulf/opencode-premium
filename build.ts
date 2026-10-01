@@ -1,7 +1,7 @@
 import solid from "@opentui/solid/bun-plugin"
 
 const result = await Bun.build({
-  entrypoints: ["./src/tui.tsx"],
+  entrypoints: ["./src/tui.tsx", "./src/skill-router.ts"],
   outdir: "./dist",
   target: "bun",
   format: "esm",

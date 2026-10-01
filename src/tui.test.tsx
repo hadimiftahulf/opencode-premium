@@ -6,6 +6,7 @@ import { activityDetail, avatarFrame, avatarPalette, avatarState, compact, recen
 import { ResponsiveDock, SidebarPresence, visualFeedback, attentionFeedback, compactionMonitor, waitingReason, ObservedWait, Companion, holdKeyboardPose, InfoCard, Overview, retainActivity, Welcome } from "./tui"
 import { createRoot, createSignal } from "solid-js"
 import type { Event, ToolPart, SessionStatus } from "@opencode-ai/sdk/v2"
+import { createPrayerReminder, prayerReminders } from "./prayer-reminder"
 
 const api = {
   theme: { current: { primary: RGBA.fromHex("#9cdec5"), text: RGBA.fromHex("#e5efec"), textMuted: RGBA.fromHex("#a2b5b0") } },
@@ -13,6 +14,34 @@ const api = {
 } as unknown as TuiPluginApi
 
 describe("session data", () => {
+  test("prayer appears on normal and mini companion while attention keeps priority", async () => {
+    const { fixture } = activityFixture()
+    let commands: TuiCommand[] = []
+    let cleanup = () => {}
+    Object.assign(fixture, {
+      command: { register: (factory: () => TuiCommand[]) => { commands = factory(); return () => {} } },
+      lifecycle: { onDispose: (fn: () => void) => { cleanup = fn } },
+      ui: { toast: () => {} },
+    })
+    const root = createRoot((dispose) => ({ dispose, reminder: createPrayerReminder(fixture, { enabled: false }, async () => {}, { play: async () => {}, stop: () => {}, dispose: () => {} }) }))
+    prayerReminders.set(fixture, root.reminder)
+    await commands.find((command) => command.value === "studio.prayer.test.fajr")!.onSelect?.()
+    try {
+      for (const mini of [false, true]) {
+        const [attention, setAttention] = createSignal(0)
+        const view = await testRender(() => <Companion api={fixture} activity={{ ...sidebarActivity(fixture, "parent"), attention: attention() }} mini={mini} motion={false} />, { width: 65, height: 25 })
+        try {
+          await view.renderOnce()
+          expect(view.captureCharFrame()).toContain("Subuh · rakaat 1/2")
+          expect(view.captureCharFrame()).toContain("▀")
+          setAttention(1)
+          await view.renderOnce()
+          expect(view.captureCharFrame()).toContain("Menunggu jawaban")
+          expect(view.captureCharFrame()).not.toContain("rakaat 1/2")
+        } finally { view.renderer.destroy() }
+      }
+    } finally { cleanup(); root.dispose(); prayerReminders.delete(fixture) }
+  })
   test("formats tokens without inventing missing values", () => {
     expect(compact(1200)).toBe("1.2K")
     expect(compact(0)).toBe("0")
@@ -30,6 +59,21 @@ describe("session data", () => {
   test("empty session has no fabricated model or usage", () => {
     expect(sessionMetrics(api, "empty")).toMatchObject({ model: "Menunggu respons", used: undefined, percent: undefined, cost: 0 })
     expect(recentTools(api, "empty")).toEqual([])
+  })
+  test("provider usage above model limit is not presented as DCP context fullness", async () => {
+    const { fixture } = activityFixture()
+    fixture.kv.set("studio.card.context", true)
+    fixture.state.session.messages = () => [{ id: "usage", role: "assistant", sessionID: "parent", parentID: "user", time: { created: 1 }, mode: "build", path: { cwd: "/workspace", root: "/workspace" }, modelID: "Unlimited", providerID: "9router", agent: "build", cost: 0, tokens: { input: 740000, output: 9200, reasoning: 0, cache: { read: 0, write: 0 } } }] as ReturnType<TuiPluginApi["state"]["session"]["messages"]>
+    Object.defineProperty(fixture.state, "provider", { value: [{ id: "9router", models: { Unlimited: { limit: { context: 131072 } } } }] })
+    const view = await testRender(() => <Overview api={fixture} id="parent" motion={false} />, { width: 70, height: 80 })
+    try {
+      await view.renderOnce()
+      const text = view.captureCharFrame()
+      expect(text).not.toContain("% terpakai")
+      expect(text).not.toContain("Konteks mendekati batas")
+      expect(text).toContain("Konteks aktif DCP · belum diukur")
+      expect(text).toContain("749.2K")
+    } finally { view.renderer.destroy() }
   })
 })
 
@@ -88,6 +132,23 @@ function eventFixture() {
 }
 
 describe("compaction and attention", () => {
+  test("pending tools do not cut short disposal, but user attention still interrupts", async () => {
+    const { fixture, tool } = activityFixture()
+    const activity = sidebarActivity(fixture, "parent")
+    const [state, setState] = createSignal(avatarState(activity, true))
+    let dispose = () => {}
+    const pose = createRoot((cleanup) => { dispose = cleanup; return holdKeyboardPose(state, 50, 100) })
+    try {
+      setState(avatarState({ ...activity, current: tool("read", { status: "pending", input: {}, raw: "" }) }))
+      expect(pose()).toBe("compact")
+      expect(state().label).toBe("Menunggu tool")
+      await Bun.sleep(120)
+      expect(pose()).toBe("wait")
+      setState(avatarState(activity, true))
+      setState(avatarState({ ...activity, attention: 1 }))
+      expect(pose()).toBe("wait")
+    } finally { dispose() }
+  })
   test("compact pose finishes its dwell while real status changes and resets across sessions", async () => {
     const { fixture } = activityFixture()
     const activity = sidebarActivity(fixture, "parent")
@@ -192,6 +253,13 @@ describe("compaction and attention", () => {
     const frames = Array.from({ length: 12 }, (_, index) => avatarFrame("compact", index))
     expect(frames.every((frame) => frame.length === 28 && frame.every((row) => row.length === 28))).toBe(true)
     expect(new Set(frames.map((frame) => JSON.stringify(frame))).size).toBeGreaterThan(6)
+    for (const frame of frames) {
+      expect(frame[24].slice(8, 10).every((pixel) => pixel === undefined)).toBe(true)
+      expect(frame[24][6]).toBe(avatarPalette.chairEdge)
+      expect(frame[24][12]).toBe(avatarPalette.chair)
+      expect(frame[26][5]).toBe(avatarPalette.trimLight)
+      expect(frame[26][12]).toBe(avatarPalette.trimLight)
+    }
   })
   test("reply sounds deduplicate without duplicating native question notifications", async () => {
     const context = eventFixture()
@@ -503,7 +571,7 @@ describe("collapsible information cards", () => {
     try {
       await view.renderOnce()
       const frame = view.captureCharFrame()
-      for (const title of ["Konteks sesi", "Progres tugas", "Koneksi MCP", "Ruang kerja & berkas", "/workspace", "Belum ada perubahan"])
+      for (const title of ["Laporan token provider", "Progres tugas", "Koneksi MCP", "Ruang kerja & berkas", "/workspace", "Belum ada perubahan"])
         expect(frame).toContain(title)
       expect(frame).not.toContain("Terhubung bukan berarti")
     } finally { view.renderer.destroy() }
