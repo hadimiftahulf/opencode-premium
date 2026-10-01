@@ -6,6 +6,7 @@ import { activityDetail, avatarFrame, avatarPalette, avatarState, compact, recen
 import { ResponsiveDock, SidebarPresence, visualFeedback, attentionFeedback, compactionMonitor, waitingReason, ObservedWait, Companion, holdKeyboardPose, InfoCard, Overview, retainActivity, Welcome } from "./tui"
 import { createRoot, createSignal } from "solid-js"
 import type { Event, ToolPart, SessionStatus } from "@opencode-ai/sdk/v2"
+import { createPrayerReminder, prayerReminders } from "./prayer-reminder"
 
 const api = {
   theme: { current: { primary: RGBA.fromHex("#9cdec5"), text: RGBA.fromHex("#e5efec"), textMuted: RGBA.fromHex("#a2b5b0") } },
@@ -13,6 +14,34 @@ const api = {
 } as unknown as TuiPluginApi
 
 describe("session data", () => {
+  test("prayer appears on normal and mini companion while attention keeps priority", async () => {
+    const { fixture } = activityFixture()
+    let commands: TuiCommand[] = []
+    let cleanup = () => {}
+    Object.assign(fixture, {
+      command: { register: (factory: () => TuiCommand[]) => { commands = factory(); return () => {} } },
+      lifecycle: { onDispose: (fn: () => void) => { cleanup = fn } },
+      ui: { toast: () => {} },
+    })
+    const root = createRoot((dispose) => ({ dispose, reminder: createPrayerReminder(fixture, { enabled: false }, async () => {}) }))
+    prayerReminders.set(fixture, root.reminder)
+    await commands.find((command) => command.value === "studio.prayer.test.fajr")!.onSelect?.()
+    try {
+      for (const mini of [false, true]) {
+        const [attention, setAttention] = createSignal(0)
+        const view = await testRender(() => <Companion api={fixture} activity={{ ...sidebarActivity(fixture, "parent"), attention: attention() }} mini={mini} motion={false} />, { width: 65, height: 25 })
+        try {
+          await view.renderOnce()
+          expect(view.captureCharFrame()).toContain("Subuh · rakaat 1/2")
+          expect(view.captureCharFrame()).toContain("▀")
+          setAttention(1)
+          await view.renderOnce()
+          expect(view.captureCharFrame()).toContain("Menunggu jawaban")
+          expect(view.captureCharFrame()).not.toContain("rakaat 1/2")
+        } finally { view.renderer.destroy() }
+      }
+    } finally { cleanup(); root.dispose(); prayerReminders.delete(fixture) }
+  })
   test("formats tokens without inventing missing values", () => {
     expect(compact(1200)).toBe("1.2K")
     expect(compact(0)).toBe("0")

@@ -2,6 +2,8 @@ import type { TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { useTerminalDimensions } from "@opentui/solid"
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, type Accessor, type JSX } from "solid-js"
 import { activityDetail, avatarFrame, avatarState, compact, sidebarActivity, sessionMetrics } from "./model"
+import { prayerFrame } from "./prayer"
+import { createPrayerReminder, prayerReminders } from "./prayer-reminder"
 
 export function retainActivity<T>(source: Accessor<T[]>, key: (item: T) => string, session: Accessor<string>, delay = 4000) {
   const [rows, setRows] = createSignal<{ item: T; ended?: number }[]>([])
@@ -214,6 +216,7 @@ export function holdKeyboardPose(source: Accessor<ReturnType<typeof avatarState>
 }
 
 export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeof sidebarActivity>; motion?: boolean; compacting?: boolean; mini?: boolean; portraitOnly?: boolean }) {
+  const prayer = () => props.activity.attention || props.activity.latest?.state.status === "error" ? undefined : prayerReminders.get(props.api)?.view()
   const state = createMemo(() => avatarState(props.activity, props.compacting), undefined, {
     equals: (previous, next) => previous.pose === next.pose && previous.label === next.label && previous.moving === next.moving,
   })
@@ -231,7 +234,10 @@ export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeo
     onCleanup(() => clearInterval(timer))
   })
   const theme = () => props.api.theme.current
-  const pixels = createMemo(() => avatarFrame(pose(), frame()))
+  const pixels = createMemo(() => {
+    const current = prayer()
+    return current ? prayerFrame(props.motion === false ? "stand" : current.step.pose) : avatarFrame(pose(), frame())
+  })
   const mini = () => props.mini || size().height < 28
   const rows = createMemo(() => Array.from({ length: mini() ? 7 : 14 }, (_, index) => index))
   const columns = createMemo(() => Array.from({ length: mini() ? 14 : 28 }, (_, index) => index))
@@ -250,7 +256,7 @@ export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeo
         </text>}</For>
       </box>
     <Show when={!props.portraitOnly}>
-    <text fg={theme().text}><b>{state().label}</b></text>
+    <text fg={theme().text}><b>{prayer()?.label ?? state().label}</b></text>
     <Show when={props.activity.latest}>{(latest) => <box>
       <text fg={theme().textMuted}>Aktivitas terakhir · {activityDetail(latest()).status}</text>
       <text fg={theme().text} wrapMode="word"><b>{activityDetail(latest()).action}</b></text>
@@ -281,7 +287,7 @@ export function Welcome(props: { api: TuiPluginApi; motion?: boolean; speechInte
           <Companion api={props.api} activity={idle} motion={props.motion} mini={narrow() || size().height < 32} portraitOnly />
         </box>
         <box flexGrow={1} flexShrink={1} minWidth={0}>
-          <text fg={theme().textMuted}>Santai · siap bantu</text>
+          <text fg={theme().textMuted}>{prayerReminders.get(props.api)?.view()?.label ?? "Santai · siap bantu"}</text>
           <text fg={theme().text} wrapMode="word">{phrases[phrase()]}</text>
         </box>
       </box>
@@ -458,7 +464,7 @@ export function ResponsiveDock(props: { api: TuiPluginApi; id: string; sidebarVi
       <box width={14} flexShrink={0}><Companion api={props.api} activity={activity()} motion={props.motion} compacting={props.compacting} mini portraitOnly /></box>
       <box flexGrow={1} minWidth={0} flexShrink={1}>
         <text height={1} fg={theme().primary}><b>STUDIO · {data().agent ?? "Sesi"}</b></text>
-        <text height={1} fg={theme().text}>{avatarState(activity(), props.compacting).label}</text>
+        <text height={1} fg={theme().text}>{activity().attention ? avatarState(activity(), props.compacting).label : prayerReminders.get(props.api)?.view()?.label ?? avatarState(activity(), props.compacting).label}</text>
         <text height={1} fg={theme().textMuted}>{data().model}{data().used === undefined ? "" : ` · ${compact(data().used ?? NaN)} token (laporan)`}</text>
         <text height={1} fg={activity().attention ? theme().warning : theme().textMuted}>{activity().attention ? `${activity().attention} permintaan menunggu jawaban` : `MCP ${activity().mcp.length} aktif · Agent ${activity().agents.length} · Tugas ${activity().completed}/${activity().total}`}</text>
         <text height={1} fg={theme().text}>{activity().latest ? `${activityDetail(activity().latest!).status} · ${activityDetail(activity().latest!).action}` : "Belum ada aktivitas tool"}</text>
@@ -490,6 +496,8 @@ function StatusBar(props: { api: TuiPluginApi }) {
 const plugin: TuiPluginModule = {
   id: "saffteen-studio",
   tui: async (api, options) => {
+    prayerReminders.set(api, createPrayerReminder(api, options?.prayer, desktopNotification))
+    api.lifecycle.onDispose(() => { prayerReminders.delete(api) })
     attentionFeedback(api)
     visualFeedback(api)
     const compacting = compactionMonitor(api)
