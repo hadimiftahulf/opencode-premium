@@ -4,6 +4,7 @@ import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, 
 import { activityDetail, avatarFrame, avatarState, compact, sidebarActivity, sessionMetrics } from "./model"
 import { prayerFrame } from "./prayer"
 import { createPrayerReminder, prayerReminders } from "./prayer-reminder"
+import { prayerDesktopNotification } from "./prayer-audio"
 
 export function retainActivity<T>(source: Accessor<T[]>, key: (item: T) => string, session: Accessor<string>, delay = 4000) {
   const [rows, setRows] = createSignal<{ item: T; ended?: number }[]>([])
@@ -496,7 +497,7 @@ function StatusBar(props: { api: TuiPluginApi }) {
 const plugin: TuiPluginModule = {
   id: "saffteen-studio",
   tui: async (api, options) => {
-    prayerReminders.set(api, createPrayerReminder(api, options?.prayer, desktopNotification))
+    prayerReminders.set(api, createPrayerReminder(api, options?.prayer, prayerDesktopNotification))
     api.lifecycle.onDispose(() => { prayerReminders.delete(api) })
     attentionFeedback(api)
     visualFeedback(api)

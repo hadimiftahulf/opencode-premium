@@ -23,7 +23,7 @@ describe("session data", () => {
       lifecycle: { onDispose: (fn: () => void) => { cleanup = fn } },
       ui: { toast: () => {} },
     })
-    const root = createRoot((dispose) => ({ dispose, reminder: createPrayerReminder(fixture, { enabled: false }, async () => {}) }))
+    const root = createRoot((dispose) => ({ dispose, reminder: createPrayerReminder(fixture, { enabled: false }, async () => {}, { play: async () => {}, stop: () => {}, dispose: () => {} }) }))
     prayerReminders.set(fixture, root.reminder)
     await commands.find((command) => command.value === "studio.prayer.test.fajr")!.onSelect?.()
     try {

@@ -645,20 +645,96 @@ function prayerFrame(pose) {
 
 // src/prayer-reminder.ts
 import { createSignal } from "solid-js";
-function createPrayerReminder(api, options, send) {
+
+// src/prayer-audio.ts
+import { Audio } from "@opentui/core";
+import { fileURLToPath } from "url";
+function createPrayerAudio(factory = () => Audio.create({ autoStart: false })) {
+  let engine;
+  let generation = 0;
+  let disposed = false;
+  const stop = () => {
+    generation++;
+    engine?.dispose();
+    engine = undefined;
+  };
+  return {
+    stop,
+    async play() {
+      stop();
+      if (disposed)
+        return;
+      const token = generation;
+      const current = factory();
+      engine = current;
+      try {
+        const sound = await current.loadSoundFile(fileURLToPath(new URL("../assets/Adzan.mp3", import.meta.url)));
+        if (disposed || token !== generation)
+          return;
+        if (!sound || !current.start() || !current.play(sound, { volume: 0.8 }))
+          throw new Error("Pemutar azan tidak tersedia");
+      } catch (error) {
+        if (token !== generation)
+          return;
+        stop();
+        throw error;
+      }
+    },
+    dispose() {
+      disposed = true;
+      stop();
+    }
+  };
+}
+async function prayerDesktopNotification(input) {
+  const { default: notifier } = await import("node-notifier");
+  await new Promise((resolve, reject) => {
+    notifier.notify({
+      title: input.title,
+      message: `${input.message} Klik notifikasi untuk hentikan azan; atau /studio-prayer-stop.`,
+      sound: false,
+      timeout: 240,
+      ...process.platform === "darwin" ? { actions: ["Hentikan azan"], closeLabel: "Tutup" } : {}
+    }, (error, response, metadata) => {
+      const action = String(metadata?.activationValue ?? response ?? "").toLowerCase();
+      if (action === "hentikan azan" || action === "activate" || action === "contentsclicked" || action === "clicked")
+        input.onStop?.();
+      if (error)
+        reject(error);
+      else
+        resolve();
+    });
+  });
+}
+
+// src/prayer-reminder.ts
+function createPrayerReminder(api, options, send, audio = createPrayerAudio()) {
   const config = prayerConfig(options);
   const [active, setActive] = createSignal();
   const [now, setNow] = createSignal(Date.now());
   const [schedule, setSchedule] = createSignal(prayerSchedule(prayerDate(Date.now(), config.timezone), config));
   let disposed = false;
+  let announcement = 0;
+  let soundEnabled = api.kv.get("studio.prayer.sound", true);
   const format = (at) => new Intl.DateTimeFormat("id-ID", { timeZone: config.timezone, hour: "2-digit", minute: "2-digit" }).format(at);
   const announce = async (prayer, demo) => {
+    const token = ++announcement;
+    if (soundEnabled)
+      audio.play().catch(() => {
+        if (!disposed)
+          api.ui.toast({ variant: "warning", message: "Azan gagal diputar; pengingat visual tetap aktif." });
+      });
+    else
+      audio.stop();
     setActive({ prayer, started: Date.now(), demo });
     const title = demo ? "Studio \xB7 Tes pengingat salat" : `Waktu salat ${prayer.name}`;
     const message = `${config.city} \xB7 ${prayer.name} ${prayer.rakaat} rakaat. ${demo ? "Ini hanya tes, bukan penanda masuk waktu." : "Mari jeda sejenak untuk salat. Jadwal perhitungan lokal."}`;
     api.ui.toast({ title, message, variant: "info", duration: 1e4 });
     try {
-      await send({ title, message });
+      await send({ title, message, onStop: () => {
+        if (!disposed && token === announcement)
+          audio.stop();
+      } });
     } catch {
       if (!disposed)
         api.ui.toast({ variant: "warning", message: "Notifikasi salat gagal dikirim ke desktop. Periksa izin notifikasi OS." });
@@ -704,6 +780,29 @@ function createPrayerReminder(api, options, send) {
       await announce(prayer, true);
     }
   })), {
+    title: "Studio: hentikan suara azan",
+    value: "studio.prayer.stop",
+    category: "Studio",
+    slash: { name: "studio-prayer-stop" },
+    onSelect: (dialog) => {
+      dialog?.clear();
+      audio.stop();
+      api.ui.toast({ variant: "info", message: "Suara azan dihentikan." });
+    }
+  }, {
+    title: "Studio: aktif/nonaktif suara azan",
+    value: "studio.prayer.sound",
+    category: "Studio",
+    slash: { name: "studio-prayer-sound" },
+    onSelect: (dialog) => {
+      dialog?.clear();
+      soundEnabled = !soundEnabled;
+      api.kv.set("studio.prayer.sound", soundEnabled);
+      if (!soundEnabled)
+        audio.stop();
+      api.ui.toast({ variant: "info", message: soundEnabled ? "Suara azan aktif." : "Suara azan nonaktif; pengingat visual tetap aktif." });
+    }
+  }, {
     title: "Studio: tutup ilustrasi salat",
     value: "studio.prayer.dismiss",
     category: "Studio",
@@ -715,6 +814,7 @@ function createPrayerReminder(api, options, send) {
   }]);
   api.lifecycle.onDispose(() => {
     disposed = true;
+    audio.dispose();
     clearInterval(timer);
     command?.();
     setActive(undefined);
@@ -2159,7 +2259,7 @@ function StatusBar(props) {
 var plugin = {
   id: "saffteen-studio",
   tui: async (api, options) => {
-    prayerReminders.set(api, createPrayerReminder(api, options?.prayer, desktopNotification));
+    prayerReminders.set(api, createPrayerReminder(api, options?.prayer, prayerDesktopNotification));
     api.lifecycle.onDispose(() => {
       prayerReminders.delete(api);
     });

@@ -1,20 +1,28 @@
 import type { TuiPluginApi } from "@opencode-ai/plugin/tui"
 import { createSignal } from "solid-js"
 import { duePrayer, prayerConfig, prayerDate, prayerSchedule, prayerSequence, prayerStepMs, prayers, type Prayer } from "./prayer"
+import { createPrayerAudio } from "./prayer-audio"
 
-export function createPrayerReminder(api: TuiPluginApi, options: unknown, send: (input: { title: string; message: string }) => Promise<void>) {
+export function createPrayerReminder(api: TuiPluginApi, options: unknown, send: (input: { title: string; message: string; onStop?: () => void }) => Promise<void>, audio = createPrayerAudio()) {
   const config = prayerConfig(options)
   const [active, setActive] = createSignal<{ prayer: Prayer; started: number; demo: boolean }>()
   const [now, setNow] = createSignal(Date.now())
   const [schedule, setSchedule] = createSignal(prayerSchedule(prayerDate(Date.now(), config.timezone), config))
   let disposed = false
+  let announcement = 0
+  let soundEnabled = api.kv.get<boolean>("studio.prayer.sound", true)
   const format = (at: number) => new Intl.DateTimeFormat("id-ID", { timeZone: config.timezone, hour: "2-digit", minute: "2-digit" }).format(at)
   const announce = async (prayer: Prayer, demo: boolean) => {
+    const token = ++announcement
+    if (soundEnabled) void audio.play().catch(() => {
+      if (!disposed) api.ui.toast({ variant: "warning", message: "Azan gagal diputar; pengingat visual tetap aktif." })
+    })
+    else audio.stop()
     setActive({ prayer, started: Date.now(), demo })
     const title = demo ? "Studio · Tes pengingat salat" : `Waktu salat ${prayer.name}`
     const message = `${config.city} · ${prayer.name} ${prayer.rakaat} rakaat. ${demo ? "Ini hanya tes, bukan penanda masuk waktu." : "Mari jeda sejenak untuk salat. Jadwal perhitungan lokal."}`
     api.ui.toast({ title, message, variant: "info", duration: 10000 })
-    try { await send({ title, message }) } catch {
+    try { await send({ title, message, onStop: () => { if (!disposed && token === announcement) audio.stop() } }) } catch {
       if (!disposed) api.ui.toast({ variant: "warning", message: "Notifikasi salat gagal dikirim ke desktop. Periksa izin notifikasi OS." })
     }
   }
@@ -44,10 +52,16 @@ export function createPrayerReminder(api: TuiPluginApi, options: unknown, send: 
     slash: { name: `studio-prayer-test-${prayer.key}` },
     onSelect: async (dialog?: { clear: () => void }) => { dialog?.clear(); await announce(prayer, true) },
   })), {
+    title: "Studio: hentikan suara azan", value: "studio.prayer.stop", category: "Studio", slash: { name: "studio-prayer-stop" },
+    onSelect: (dialog) => { dialog?.clear(); audio.stop(); api.ui.toast({ variant: "info", message: "Suara azan dihentikan." }) },
+  }, {
+    title: "Studio: aktif/nonaktif suara azan", value: "studio.prayer.sound", category: "Studio", slash: { name: "studio-prayer-sound" },
+    onSelect: (dialog) => { dialog?.clear(); soundEnabled = !soundEnabled; api.kv.set("studio.prayer.sound", soundEnabled); if (!soundEnabled) audio.stop(); api.ui.toast({ variant: "info", message: soundEnabled ? "Suara azan aktif." : "Suara azan nonaktif; pengingat visual tetap aktif." }) },
+  }, {
     title: "Studio: tutup ilustrasi salat", value: "studio.prayer.dismiss", category: "Studio", slash: { name: "studio-prayer-dismiss" },
     onSelect: (dialog) => { dialog?.clear(); setActive(undefined) },
   }])
-  api.lifecycle.onDispose(() => { disposed = true; clearInterval(timer); command?.(); setActive(undefined) })
+  api.lifecycle.onDispose(() => { disposed = true; audio.dispose(); clearInterval(timer); command?.(); setActive(undefined) })
   const view = () => {
     const current = active()
     if (!current) return undefined

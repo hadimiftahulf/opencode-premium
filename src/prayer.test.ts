@@ -52,12 +52,23 @@ describe("prayer reminders", () => {
       command: { register: (factory: () => TuiCommand[]) => { commands = factory(); return () => { unregistered = true } } },
       lifecycle: { onDispose: (fn: () => void) => { cleanup = fn } },
     } as unknown as TuiPluginApi
-    const instance = createRoot((dispose) => ({ dispose, reminder: createPrayerReminder(api, { enabled: false }, async (input) => { notices.push(input.message) }) }))
+    let playing = false
+    let stopFromNotification: (() => void) | undefined
+    const instance = createRoot((dispose) => ({ dispose, reminder: createPrayerReminder(api, { enabled: false }, async (input) => { notices.push(input.message); stopFromNotification = input.onStop }, { play: async () => { playing = true }, stop: () => { playing = false }, dispose: () => { playing = false } }) }))
     await commands.find((c) => c.value === "studio.prayer.test.maghrib")!.onSelect?.()
     expect(notices).toHaveLength(1)
     expect(notices[0]).toContain("Magrib 3 rakaat")
     expect(notices[0]).toContain("hanya tes")
     expect(instance.reminder.view()?.prayer.rakaat).toBe(3)
+    expect(playing).toBe(true)
+    stopFromNotification?.()
+    expect(playing).toBe(false)
+    await commands.find((c) => c.value === "studio.prayer.test.fajr")!.onSelect?.()
+    await commands.find((c) => c.value === "studio.prayer.stop")!.onSelect?.()
+    expect(playing).toBe(false)
+    await commands.find((c) => c.value === "studio.prayer.sound")!.onSelect?.()
+    await commands.find((c) => c.value === "studio.prayer.test.fajr")!.onSelect?.()
+    expect(playing).toBe(false)
     cleanup(); instance.dispose()
     expect(unregistered).toBe(true)
     expect(instance.reminder.view()).toBeUndefined()

@@ -42,6 +42,10 @@ Avatar menampilkan ilustrasi singkat berdiri, takbir pembuka, bersedekap pada se
 - `/studio-prayer`: jadwal hari ini.
 - `/studio-prayer-test-fajr`, `-dhuhr`, `-asr`, `-maghrib`, `-isha`: tes notifikasi desktop dan ilustrasi sesuai salat (awalan lengkap `studio-prayer-test-`).
 - `/studio-prayer-dismiss`: tutup ilustrasi.
+- `/studio-prayer-stop`: hentikan azan yang sedang diputar.
+- `/studio-prayer-sound`: aktif/nonaktif suara azan; pilihan tersimpan, pengingat visual tetap aktif.
+
+Pengingat dan tes salat memutar `assets/Adzan.mp3` melalui pemutar terpisah. Memulai salat lain menghentikan pemutaran sebelumnya; menutup plugin menghentikan audio. Menutup ilustrasi saja tidak menghentikan audio. Pada macOS notifikasi menyediakan aksi **Hentikan azan**; klik isi notifikasi juga diproses bila backend OS melaporkannya. Dukungan klik/aksi berbeda antar-OS, sehingga perintah stop di atas selalu menjadi kontrol cadangan. Tombol desktop belum diuji lewat klik langsung; API pemutaran dan stop sudah diuji di macOS. Volume pemutar 80%, tanpa mengubah volume sistem. Berkas MP3 adalah salinan pilihan pengguna, bukan audio berlisensi redistribusi dari proyek ini.
 
 Domisili dapat diatur melalui opsi entry plugin **TUI** di `tui.json`:
 
