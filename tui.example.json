@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "theme": "saffteen-studio",
+  "plugin": ["/ABSOLUTE/PATH/TO/PLUGIN"],
+  "plugin_enabled": {
+    "internal:sidebar-context": false,
+    "internal:sidebar-mcp": false,
+    "internal:sidebar-lsp": false,
+    "internal:sidebar-todo": false,
+    "internal:sidebar-files": false
+  },
+  "attention": {
+    "enabled": true,
+    "sound": true,
+    "volume": 0.8,
+    "sounds": {
+      "default": "/ABSOLUTE/PATH/TO/PLUGIN/assets/notification.mp3",
+      "permission": "/ABSOLUTE/PATH/TO/PLUGIN/assets/notification.mp3",
+      "question": "/ABSOLUTE/PATH/TO/PLUGIN/assets/notification.mp3",
+      "done": "/ABSOLUTE/PATH/TO/PLUGIN/assets/notification.mp3",
+      "subagent_done": "/ABSOLUTE/PATH/TO/PLUGIN/assets/notification.mp3",
+      "error": "/ABSOLUTE/PATH/TO/PLUGIN/assets/notification.mp3"
+    }
+  },
+  "prompt": { "max_width": 96, "max_height": 8 }
+}

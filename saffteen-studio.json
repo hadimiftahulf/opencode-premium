@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/theme.json",
+  "defs": {
+    "canvas": "#111719", "panel": "#192225", "element": "#223034",
+    "ink": "#e5efec", "muted": "#a2b5b0", "mint": "#9cdec5",
+    "line": "#415853", "red": "#f29b9b", "amber": "#edcd96"
+  },
+  "theme": {
+    "primary": "mint", "secondary": "mint", "accent": "mint",
+    "error": "red", "warning": "amber", "success": "mint", "info": "mint",
+    "text": "ink", "textMuted": "muted", "selectedListItemText": "canvas",
+    "background": "canvas", "backgroundPanel": "panel", "backgroundElement": "element", "backgroundMenu": "panel",
+    "border": "line", "borderActive": "mint", "borderSubtle": "#2e403d",
+    "diffAdded": "mint", "diffRemoved": "red", "diffContext": "muted", "diffHunkHeader": "muted",
+    "diffHighlightAdded": "#b7f0d9", "diffHighlightRemoved": "#ffc4c4",
+    "diffAddedBg": "#203b32", "diffRemovedBg": "#3a272b", "diffContextBg": "canvas",
+    "diffLineNumber": "muted", "diffAddedLineNumberBg": "#203b32", "diffRemovedLineNumberBg": "#3a272b",
+    "markdownText": "ink", "markdownHeading": "mint", "markdownLink": "mint", "markdownLinkText": "mint",
+    "markdownCode": "#d6dfb7", "markdownBlockQuote": "muted", "markdownEmph": "ink", "markdownStrong": "ink",
+    "markdownHorizontalRule": "line", "markdownListItem": "mint", "markdownListEnumeration": "mint",
+    "markdownImage": "mint", "markdownImageText": "ink", "markdownCodeBlock": "ink",
+    "syntaxComment": "muted", "syntaxKeyword": "mint", "syntaxFunction": "#c8e7db", "syntaxVariable": "ink",
+    "syntaxString": "#d6dfb7", "syntaxNumber": "amber", "syntaxType": "#b4d5df", "syntaxOperator": "mint", "syntaxPunctuation": "muted"
+  }
+}
