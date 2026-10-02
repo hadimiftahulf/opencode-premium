@@ -43,7 +43,7 @@ export function prayerSequence(rakaat: number) {
   return result
 }
 export const prayerStepMs = 1600
-export function prayerFrame(pose: ReturnType<typeof prayerSequence>[number]["pose"]) {
+export function prayerFrame(pose: ReturnType<typeof prayerSequence>[number]["pose"] | "dua", frame = 0) {
   const pixels: (string | undefined)[][] = Array.from({ length: 28 }, () => Array(28).fill(undefined))
   const p = (x: number, y: number, w: number, h: number, color: keyof typeof avatarPalette) => {
     for (let row = y; row < y + h; row++) for (let col = x; col < x + w; col++) if (row >= 0 && row < 28 && col >= 0 && col < 28) pixels[row][col] = avatarPalette[color]
@@ -88,16 +88,24 @@ export function prayerFrame(pose: ReturnType<typeof prayerSequence>[number]["pos
     p(14, 16, 3, 2, "shirtShade")
     head(17, 17, 9, "down")
     arm([[15, 18], [14, 21], [18, 23]], true)
-  } else if (["sit", "tahiyat-early", "tahiyat-final", "salam-right", "salam-left"].includes(pose)) {
+  } else if (["sit", "tahiyat-early", "tahiyat-final", "salam-right", "salam-left", "dua"].includes(pose)) {
     p(9, 22, 11, 3, "chair"); p(11, 22, 9, 1, "chairEdge")
     p(9, 15, 9, 7, "shirt"); p(9, 16, 2, 5, "shirtLight")
     p(16, 16, 2, 6, "shirtShade"); p(9, 15, 9, 2, "shirtLight")
     p(11, 16, 5, 1, "shirtShade"); p(11, 18, 1, 2, "accent"); p(15, 18, 1, 2, "accent")
     head(8, 5, 10, pose === "salam-left" ? "left" : "front")
-    arm([[10, 18], [10, 21], [13, 22]], true); arm([[17, 18], [18, 20], [19, 22]])
-    if (pose !== "sit") p(20, 21, 1, 1, "skinLight")
+    if (pose !== "dua") {
+      arm([[10, 18], [10, 21], [13, 22]], true); arm([[17, 18], [18, 20], [19, 22]])
+      if (pose !== "sit") p(20, 21, 1, 1, "skinLight")
+    }
     if (["tahiyat-final", "salam-right", "salam-left"].includes(pose)) { p(7, 23, 8, 2, "chairEdge"); p(20, 23, 2, 2, "skinShade") }
     if (pose === "salam-right") p(17, 12, 1, 2, "skinLight")
+    if (pose === "dua") {
+      const lift = Math.floor(frame / 4) % 2
+      arm([[10, 18], [7, 20], [9, 16 - lift]], true)
+      arm([[17, 18], [20, 20], [18, 16 - lift]])
+      p(8, 15 - lift, 3, 2, "skinLight"); p(17, 15 - lift, 3, 2, "skinLight")
+    }
   } else if (pose === "bow") {
     p(7, 16, 3, 9, "chair"); p(12, 16, 3, 9, "chairEdge")
     p(7, 24, 4, 1, "skinShade"); p(12, 24, 4, 1, "skin")

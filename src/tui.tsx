@@ -5,6 +5,9 @@ import { activityDetail, avatarFrame, avatarState, compact, sidebarActivity, ses
 import { prayerFrame } from "./prayer"
 import { createPrayerReminder, prayerReminders } from "./prayer-reminder"
 import { prayerDesktopNotification } from "./prayer-audio"
+import { duaEmoji } from "./duas"
+import { inspectWorkspace } from "./workspace"
+import { elapsedLabel, fetchSubagent } from "./subagent"
 
 export function retainActivity<T>(source: Accessor<T[]>, key: (item: T) => string, session: Accessor<string>, delay = 4000) {
   const [rows, setRows] = createSignal<{ item: T; ended?: number }[]>([])
@@ -216,7 +219,17 @@ export function holdKeyboardPose(source: Accessor<ReturnType<typeof avatarState>
   return pose
 }
 
-export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeof sidebarActivity>; motion?: boolean; compacting?: boolean; mini?: boolean; portraitOnly?: boolean }) {
+export function DuaBubble(props: { api: TuiPluginApi; text: string; compact?: boolean }) {
+  const theme = () => props.api.theme.current
+  return <box flexShrink={0} minWidth={0} width="100%">
+    <box backgroundColor={theme().backgroundElement} paddingLeft={1} paddingRight={1} paddingTop={props.compact ? 0 : 1} paddingBottom={props.compact ? 0 : 1} minWidth={0}>
+      <text fg={theme().text} wrapMode="word" height={props.compact ? 2 : undefined}>{duaEmoji(props.text)} {props.text}</text>
+    </box>
+    <text height={1} fg={theme().primary}>  ▾</text>
+  </box>
+}
+
+export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeof sidebarActivity>; motion?: boolean; compacting?: boolean; mini?: boolean; portraitOnly?: boolean; hideActivity?: boolean }) {
   const prayer = () => props.activity.attention || props.activity.latest?.state.status === "error" ? undefined : prayerReminders.get(props.api)?.view()
   const state = createMemo(() => avatarState(props.activity, props.compacting), undefined, {
     equals: (previous, next) => previous.pose === next.pose && previous.label === next.label && previous.moving === next.moving,
@@ -237,7 +250,7 @@ export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeo
   const theme = () => props.api.theme.current
   const pixels = createMemo(() => {
     const current = prayer()
-    return current ? prayerFrame(props.motion === false ? "stand" : current.step.pose) : avatarFrame(pose(), frame())
+    return current ? prayerFrame(props.motion === false ? (current.dua ? "dua" : "stand") : current.step.pose, props.motion === false ? 0 : frame()) : avatarFrame(pose(), frame())
   })
   const mini = () => props.mini || size().height < 28
   const rows = createMemo(() => Array.from({ length: mini() ? 7 : 14 }, (_, index) => index))
@@ -248,6 +261,7 @@ export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeo
     return block.find((color) => color !== undefined)
   }
   return <box gap={0} flexShrink={0}>
+    <Show when={!props.portraitOnly && prayer()?.dua}>{(dua) => <DuaBubble api={props.api} text={dua()} />}</Show>
       <box alignItems="center" height={mini() ? 7 : 14} flexShrink={0}>
         <For each={rows()}>{(row) => <text height={1} flexShrink={0}>
           <For each={columns()}>{(col) => <span style={{
@@ -258,7 +272,7 @@ export function Companion(props: { api: TuiPluginApi; activity: ReturnType<typeo
       </box>
     <Show when={!props.portraitOnly}>
     <text fg={theme().text}><b>{prayer()?.label ?? state().label}</b></text>
-    <Show when={props.activity.latest}>{(latest) => <box>
+    <Show when={!props.hideActivity && props.activity.latest}>{(latest) => <box>
       <text fg={theme().textMuted}>Aktivitas terakhir · {activityDetail(latest()).status}</text>
       <text fg={theme().text} wrapMode="word"><b>{activityDetail(latest()).action}</b></text>
       <Show when={activityDetail(latest()).target}><text fg={theme().text} wrapMode="char">{activityDetail(latest()).target}</text></Show>
@@ -283,13 +297,14 @@ export function Welcome(props: { api: TuiPluginApi; motion?: boolean; speechInte
   return (
     <box width="100%" maxWidth={96} paddingLeft={2} paddingRight={2} gap={1} flexShrink={0}>
       <text fg={theme().primary}><b>{narrow() ? "S / STUDIO" : "S A F F T E E N   /   S T U D I O"}</b></text>
+      <Show when={prayerReminders.get(props.api)?.view()?.dua}>{(dua) => <DuaBubble api={props.api} text={dua()} compact={size().height < 32} />}</Show>
       <box flexDirection={narrow() && size().height >= 40 ? "column" : "row"} alignItems="center" gap={1}>
         <box width={narrow() || size().height < 32 ? 14 : 28} flexShrink={0}>
           <Companion api={props.api} activity={idle} motion={props.motion} mini={narrow() || size().height < 32} portraitOnly />
         </box>
         <box flexGrow={1} flexShrink={1} minWidth={0}>
           <text fg={theme().textMuted}>{prayerReminders.get(props.api)?.view()?.label ?? "Santai · siap bantu"}</text>
-          <text fg={theme().text} wrapMode="word">{phrases[phrase()]}</text>
+          <Show when={!prayerReminders.get(props.api)?.view()?.dua}><text fg={theme().text} wrapMode="word">{phrases[phrase()]}</text></Show>
         </box>
       </box>
       <Show when={!narrow()}>
@@ -299,9 +314,10 @@ export function Welcome(props: { api: TuiPluginApi; motion?: boolean; speechInte
   )
 }
 
-export function InfoCard(props: { api: TuiPluginApi; name: string; title: string; summary: string; children: JSX.Element; initialOpen?: boolean }) {
+export function InfoCard(props: { api: TuiPluginApi; name: string; title: string; summary: string; children: JSX.Element; initialOpen?: boolean; onOpen?: (open: boolean) => void }) {
   const [open, setOpen] = createSignal(props.api.kv.get<boolean>(`studio.card.${props.name}`, props.initialOpen ?? false))
   const theme = () => props.api.theme.current
+  createEffect(() => props.onOpen?.(open()))
   const toggle = () => {
     const next = !open()
     setOpen(next)
@@ -324,6 +340,79 @@ export function InfoCard(props: { api: TuiPluginApi; name: string; title: string
   </box>
 }
 
+export function SubagentCard(props: { api: TuiPluginApi; agent: ReturnType<typeof sidebarActivity>["agents"][number]; ended?: number }) {
+  const [data, setData] = createSignal<Awaited<ReturnType<typeof fetchSubagent>>>()
+  const [error, setError] = createSignal("")
+  const [now, setNow] = createSignal(Date.now())
+  const theme = () => props.api.theme.current
+  createEffect(() => {
+    const id = props.agent.id
+    const ended = props.ended
+    const controller = new AbortController()
+    let pending = false
+    setData(undefined); setError("")
+    const refresh = async () => {
+      if (pending) return
+      pending = true
+      try { const next = await fetchSubagent(props.api, id, controller.signal); if (!controller.signal.aborted) { setData(next); setError("") } }
+      catch { if (!controller.signal.aborted) setError("Detail belum tersedia; mencoba lagi.") }
+      finally { pending = false }
+    }
+    void refresh()
+    const poll = ended ? undefined : setInterval(() => void refresh(), 5000)
+    const clock = setInterval(() => setNow(Date.now()), 1000)
+    onCleanup(() => { controller.abort(); clearInterval(poll); clearInterval(clock) })
+  })
+  return <InfoCard api={props.api} name={`agent-${props.agent.id}`} title={`${props.agent.name} · ${props.ended ? "Baru berakhir" : props.agent.label}`} summary={`${data()?.model ?? "Memuat model…"}\n${elapsedLabel(data()?.started, props.ended ?? now())} sejak sesi dibuat`}>
+    <Show when={props.agent.target}><text fg={theme().text} wrapMode="word">{props.agent.target}</text></Show>
+    <Show when={error()}><text fg={theme().warning}>{error()}</text></Show>
+    <Show when={data()}>{(detail) => <box gap={1}>
+      <text fg={theme().text} wrapMode="word">{detail().activity ? `${detail().current ? "Sekarang" : "Terakhir"} · ${detail().activity!.action} · ${detail().activity!.status}` : "Aktivitas tool belum dilaporkan."}</text>
+      <Show when={detail().activity?.target}><text fg={theme().textMuted} wrapMode="char">{detail().activity?.target}</text></Show>
+      <text fg={theme().textMuted}>{detail().todos.length ? `${detail().completed}/${detail().todos.length} tugas selesai` : "Progres tugas belum dilaporkan."}</text>
+      <For each={detail().todos}>{(todo) => <text fg={todo.status === "in_progress" ? theme().text : theme().textMuted} wrapMode="word">{todo.status === "completed" ? "✓" : todo.status === "in_progress" ? "›" : "·"} {todo.content}</text>}</For>
+    </box>}</Show>
+  </InfoCard>
+}
+
+export function WorkspaceCard(props: { api: TuiPluginApi; id: string }) {
+  const [open, setOpen] = createSignal(false)
+  const [data, setData] = createSignal<Awaited<ReturnType<typeof inspectWorkspace>>>()
+  const [error, setError] = createSignal("")
+  const theme = () => props.api.theme.current
+  createEffect(() => {
+    const root = props.api.state.path.directory
+    setData(undefined); setError("")
+    if (!open()) return
+    const controller = new AbortController()
+    let pending = false
+    const refresh = async () => {
+      if (pending) return
+      pending = true
+      try { const next = await inspectWorkspace(root, controller.signal); if (!controller.signal.aborted) { setData(next); setError("") } }
+      catch { if (!controller.signal.aborted) setError("Pemindaian Git gagal. Periksa akses folder dan instalasi Git.") }
+      finally { pending = false }
+    }
+    void refresh()
+    const timer = setInterval(() => void refresh(), 15000)
+    onCleanup(() => { controller.abort(); clearInterval(timer) })
+  })
+  return <InfoCard api={props.api} name="files" title="Ruang kerja & berkas" onOpen={setOpen} summary={error() || (data() ? `${data()!.repos.length} repo Git · ${data()!.repos.reduce((n, repo) => n + repo.files.length, 0)} entri berubah` : open() ? "Memindai repositori…" : "Buka untuk memindai repo root dan subfolder")}>
+    <text fg={theme().textMuted} wrapMode="char">{props.api.state.path.directory}</text>
+    <text fg={theme().textMuted}>Git lokal, bukan hanya perubahan sesi · refresh 15 dtk</text>
+    <Show when={data()}>{(scan) => <box gap={1}>
+      <For each={scan().repos} fallback={<text fg={theme().textMuted}>Tidak ditemukan repo Git dalam cakupan pemindaian.</text>}>{(repo) => <box>
+        <text fg={theme().primary} wrapMode="char"><b>{repo.path}</b> · {repo.branch}</text>
+        <Show when={repo.error} fallback={<text fg={theme().textMuted}>{repo.files.length ? `${repo.files.length} entri berubah` : "Working tree bersih"}</text>}><text fg={theme().warning}>{repo.error}</text></Show>
+        <For each={repo.files}>{(file) => <text fg={theme().text} wrapMode="char">{file.status} {file.path}</text>}</For>
+      </box>}</For>
+      <For each={scan().errors}>{(message) => <text fg={theme().warning}>{message}</text>}</For>
+      <Show when={scan().limited}><text fg={theme().warning}>Cakupan dibatasi 4 tingkat / 300 folder.</text></Show>
+    </box>}</Show>
+    <text fg={theme().textMuted}>{props.api.state.session.diff(props.id).length} berkas tercatat terpisah oleh sesi OpenCode.</text>
+  </InfoCard>
+}
+
 export function Overview(props: { api: TuiPluginApi; id: string; motion?: boolean; compacting?: boolean; mini?: boolean }) {
   const theme = () => props.api.theme.current
   const data = createMemo(() => sessionMetrics(props.api, props.id))
@@ -333,7 +422,6 @@ export function Overview(props: { api: TuiPluginApi; id: string; motion?: boolea
   const mcp = retainActivity(() => activity().mcp, (server) => server.name, () => props.id)
   const agents = retainActivity(() => activity().agents, (agent) => agent.id, () => props.id)
   const tools = retainActivity(() => activity().tools, (tool) => tool.callID, () => props.id)
-  const todos = retainActivity(() => activity().todos, (todo) => todo.content, () => props.id)
   const size = useTerminalDimensions()
   const limit = () => size().height < 35 ? 2 : 4
   return (
@@ -341,22 +429,16 @@ export function Overview(props: { api: TuiPluginApi; id: string; motion?: boolea
       <box>
         <text fg={theme().text} wrapMode="char"><b>{data().model}</b></text>
         <text fg={theme().textMuted}>{data().agent ?? "Sesi baru"} · {activity().status?.type === "busy" ? "Bekerja" : activity().status?.type === "retry" ? "Mencoba ulang" : "Siap"}</text>
-        <Show when={data().used !== undefined}>
-          <text fg={theme().textMuted}>
-            {compact(data().used ?? 0)} token · laporan model terakhir
-          </text>
-        </Show>
-        <Show when={data().used !== undefined}><text fg={theme().textMuted}>Bukan ukuran konteks sesudah DCP.</text></Show>
-        <Show when={data().cost > 0}><text fg={theme().textMuted}>${data().cost.toFixed(4)} tercatat</text></Show>
       </box>
       <ObservedWait reason={waitingReason(props.api, props.id, activity(), props.compacting)} session={props.id} />
-      <Companion api={props.api} activity={activity()} motion={props.motion} compacting={props.compacting} mini={props.mini} />
+      <Companion api={props.api} activity={activity()} motion={props.motion} compacting={props.compacting} mini={props.mini} hideActivity />
       <Show when={activity().attention > 0}>
         <box>
           <text fg={theme().warning}><b>Butuh jawaban · {activity().attention}</b></text>
           <text fg={theme().textMuted}>Periksa permintaan di percakapan.</text>
         </box>
       </Show>
+      <InfoCard api={props.api} name="connections" title="Koneksi MCP" initialOpen summary={`${props.api.state.mcp().filter((server) => server.status === "connected").length}/${props.api.state.mcp().length} terhubung · ${activity().mcp.length} sedang dipakai`}>
       <Show when={mcp().length > 0}>
         <box>
           <text fg={theme().primary}><b>MCP sedang dipakai / terakhir</b></text>
@@ -367,71 +449,51 @@ export function Overview(props: { api: TuiPluginApi; id: string; motion?: boolea
           <Show when={mcp().length > limit()}><text fg={theme().textMuted}>+{mcp().length - limit()} MCP lainnya</text></Show>
         </box>
       </Show>
+        <For each={props.api.state.mcp().filter((server) => !mcp().some((row) => row.item.name === server.name))}>{(server) =>
+          <text fg={server.status === "connected" ? theme().textMuted : theme().warning} wrapMode="char">{server.name} · {server.status === "connected" ? "Terhubung · tidak sedang dipakai" : server.status}</text>
+        }</For>
+        <Show when={!props.api.state.mcp().length}><text fg={theme().textMuted}>Tidak ada server MCP.</text></Show>
+      </InfoCard>
       <Show when={agents().length > 0}>
         <box>
           <text fg={theme().primary}><b>Subagent · {agents().length}</b></text>
           <For each={agents().slice(0, limit())}>{(row) =>
-            <box><text fg={theme().text} wrapMode="char">{row.item.name} · {row.ended === undefined ? row.item.label : "Baru berakhir"}</text><Show when={row.item.target}><text fg={theme().textMuted} wrapMode="word">{row.item.target}</text></Show></box>
+            <SubagentCard api={props.api} agent={row.item} ended={row.ended} />
           }</For>
           <Show when={agents().length > limit()}><text fg={theme().textMuted}>+{agents().length - limit()} agent lainnya</text></Show>
         </box>
       </Show>
+      <InfoCard api={props.api} name="result" title="Aktivitas & hasil" initialOpen summary={activity().current ? `${activityDetail(activity().current!).action} · ${activityDetail(activity().current!).status}` : activity().latest ? `${activityDetail(activity().latest!).action} · ${activityDetail(activity().latest!).status}` : "Belum ada aktivitas tool"}>
       <Show when={tools().length > 0}>
         <box>
-          <text fg={theme().primary}><b>Aktivitas tool</b></text>
           <For each={tools().slice(0, limit())}>{(row) =>
-            <text fg={theme().text} wrapMode="word">{detail(row.item).action} · {detail(row.item).status}{detail(row.item).target ? ` · ${detail(row.item).target}` : ""}</text>
+            <box><text fg={theme().text} wrapMode="word">{detail(row.item).action} · {detail(row.item).status}{detail(row.item).target ? ` · ${detail(row.item).target}` : ""}</text><Show when={detail(row.item).result}><text fg={theme().textMuted} wrapMode="word">{detail(row.item).result}</text></Show></box>
           }</For>
           <Show when={tools().length > limit()}><text fg={theme().textMuted}>+{tools().length - limit()} tool lainnya</text></Show>
         </box>
       </Show>
-      <Show when={todos().length > 0}>
-        <box>
-          <text fg={theme().primary}><b>Rencana · {activity().completed}/{activity().total}</b></text>
-          <For each={todos().slice(0, limit())}>{(row) =>
-            <text fg={row.ended === undefined && row.item.status === "in_progress" ? theme().text : theme().textMuted} wrapMode="word">{row.ended !== undefined ? "Baru berakhir · " : row.item.status === "in_progress" ? "> " : "· "}{row.item.content}</text>
-          }</For>
-          <Show when={todos().length > limit()}><text fg={theme().textMuted}>+{todos().length - limit()} tugas berikutnya</text></Show>
-        </box>
-      </Show>
-      <InfoCard api={props.api} name="result" title="Hasil terakhir" summary={activity().latest ? `${activityDetail(activity().latest!).action} · ${activityDetail(activity().latest!).status}` : "Belum ada hasil tool"}>
-        <Show when={activity().latest}>{(latest) => <box>
+        <Show when={activity().latest && !tools().slice(0, limit()).some((row) => row.item.callID === activity().latest?.callID) && !mcp().some((row) => row.item.calls.some((call) => call.callID === activity().latest?.callID)) && !["task", "subagent"].includes(activity().latest!.tool) ? activity().latest : undefined}>{(latest) => <box>
           <text fg={theme().text} wrapMode="word">{activityDetail(latest()).target || activityDetail(latest()).action}</text>
           <text fg={theme().textMuted} wrapMode="word">{activityDetail(latest()).result || "Masih diproses; belum ada hasil akhir."}</text>
         </box>}</Show>
-        <text fg={theme().textMuted}>{props.api.state.session.diff(props.id).length} berkas berubah di sesi ini · {activity().todos.length} tugas tersisa</text>
         <text fg={theme().textMuted} wrapMode="word">Hasil tes: lihat keluaran pengujian di percakapan; status tool bukan bukti tes lulus.</text>
       </InfoCard>
       <InfoCard api={props.api} name="context" title="Laporan token provider" summary={data().used === undefined ? "Token belum dilaporkan" : `${compact(data().used ?? NaN)} token · laporan terakhir`}>
-        <text fg={theme().text} wrapMode="char">{data().model}</text>
         <text fg={theme().textMuted} wrapMode="char">Provider · {data().provider}</text>
         <text fg={theme().textMuted}>Konteks aktif DCP · belum diukur</text>
         <text fg={theme().textMuted} wrapMode="word">Laporan ini menjumlahkan input, output, reasoning, dan cache dari pesan model terakhir yang melaporkan penggunaan.</text>
         <text fg={theme().textMuted} wrapMode="word">Periksa /dcp untuk statistik kompresi. Angka provider bukan ukuran pesan yang akan dikirim sesudah DCP.</text>
         <text fg={theme().textMuted}>Biaya tercatat · ${data().cost.toFixed(4)}</text>
       </InfoCard>
-      <InfoCard api={props.api} name="progress" title="Progres tugas" summary={`${activity().completed}/${activity().total} selesai · ${activity().todos.length} tersisa`}>
+      <InfoCard api={props.api} name="progress" title="Progres tugas" initialOpen summary={`${activity().completed}/${activity().total} selesai · ${activity().todos.length} tersisa`}>
         <Show when={activity().total > 0} fallback={<text fg={theme().textMuted}>Belum ada daftar tugas di sesi ini.</text>}>
           <text fg={theme().textMuted}>{activity().todos.filter((todo) => todo.status === "in_progress").length} berjalan · {activity().todos.filter((todo) => todo.status === "pending").length} antre</text>
-          <For each={props.api.state.session.todo(props.id).filter((todo) => todo.status === "completed")}>{(todo) =>
-            <text fg={theme().textMuted} wrapMode="word">Selesai · {todo.content}</text>
+          <For each={[...props.api.state.session.todo(props.id)].sort((a, b) => ({ in_progress: 0, pending: 1, completed: 2 }[a.status] ?? 3) - ({ in_progress: 0, pending: 1, completed: 2 }[b.status] ?? 3))}>{(todo) =>
+            <box marginTop={1}><text fg={todo.status === "in_progress" ? theme().primary : theme().textMuted}>{todo.status === "completed" ? "✓ Selesai" : todo.status === "in_progress" ? "› Sedang dikerjakan" : "· Menunggu"}</text><text fg={todo.status === "completed" ? theme().textMuted : theme().text} wrapMode="word">{todo.content}</text></box>
           }</For>
-          <Show when={activity().todos.length > 0}><text fg={theme().textMuted}>Tugas aktif ditampilkan di Rencana.</text></Show>
         </Show>
       </InfoCard>
-      <InfoCard api={props.api} name="connections" title="Koneksi MCP" summary={`${props.api.state.mcp().filter((server) => server.status === "connected").length}/${props.api.state.mcp().length} terhubung`}>
-        <text fg={theme().textMuted}>Terhubung bukan berarti sedang dipakai.</text>
-        <For each={props.api.state.mcp()} fallback={<text fg={theme().textMuted}>Tidak ada server MCP.</text>}>{(server) =>
-          <text fg={server.status === "connected" ? theme().text : theme().warning} wrapMode="char">{server.name} · {server.status}</text>
-        }</For>
-      </InfoCard>
-      <InfoCard api={props.api} name="files" title="Ruang kerja & berkas" summary={`${props.api.state.vcs?.branch ?? "lokal"} · ${props.api.state.session.diff(props.id).length} berkas`}>
-        <text fg={theme().textMuted} wrapMode="char">{props.api.state.path.directory}</text>
-        <For each={props.api.state.session.diff(props.id)} fallback={<text fg={theme().textMuted}>Belum ada perubahan berkas di sesi ini.</text>}>{(file) => <box>
-          <text fg={theme().text} wrapMode="char">{file.file}</text>
-          <text fg={theme().textMuted}>+{file.additions} / -{file.deletions}</text>
-        </box>}</For>
-      </InfoCard>
+      <WorkspaceCard api={props.api} id={props.id} />
     </box>
   )
 }
@@ -461,6 +523,7 @@ export function ResponsiveDock(props: { api: TuiPluginApi; id: string; sidebarVi
   }])
   if (unregister) onCleanup(unregister)
   return <Show when={!props.sidebarVisible}>
+    <Show when={!activity().attention && prayerReminders.get(props.api)?.view()?.dua}>{(dua) => <DuaBubble api={props.api} text={dua()} compact />}</Show>
     <box backgroundColor={theme().backgroundPanel} flexDirection="row" width="100%" height={8} flexShrink={0} gap={1} paddingLeft={1} paddingRight={1}>
       <box width={14} flexShrink={0}><Companion api={props.api} activity={activity()} motion={props.motion} compacting={props.compacting} mini portraitOnly /></box>
       <box flexGrow={1} minWidth={0} flexShrink={1}>

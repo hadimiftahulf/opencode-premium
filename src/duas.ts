@@ -1,0 +1,123 @@
+// Ungkapan doa sehari-hari, bukan kutipan ayat atau hadis.
+export const duas = [
+  "Ya Allah Ampuni dosaku",
+  "YaAllah abdi Cape",
+  "Ya Allah, cing di bengharkeun",
+  "Ya Allah, tenangkan hatiku hari ini.",
+  "Ya Allah, tuntun langkahku menuju kebaikan.",
+  "Ya Allah, kuatkan aku saat ingin menyerah.",
+  "Ya Allah, lapangkan dadaku menerima ujian.",
+  "Ya Allah, berkahi waktu yang Engkau titipkan.",
+  "Ya Allah, jadikan lelahku bernilai ibadah.",
+  "Ya Allah, cukupkan aku dengan rezeki yang halal.",
+  "Ya Allah, sehatkan tubuh dan pikiranku.",
+  "Ya Allah, lindungi kedua orang tuaku.",
+  "Ya Allah, bahagiakan keluargaku dengan kebaikan.",
+  "Ya Allah, sembuhkan saudara kami yang sakit.",
+  "Ya Allah, mudahkan urusan yang terasa berat.",
+  "Ya Allah, ajari aku bersyukur dalam kesederhanaan.",
+  "Ya Allah, jauhkan aku dari kesombongan.",
+  "Ya Allah, lembutkan tutur kataku.",
+  "Ya Allah, jaga lisanku dari menyakiti orang lain.",
+  "Ya Allah, bersihkan hatiku dari iri.",
+  "Ya Allah, pasihan abdi kasabaran.",
+  "Ya Allah, mugia dinten ieu pinuh ku berkah.",
+  "Ya Allah, abdi hoyong langkung caket ka Anjeun.",
+  "Ya Allah, hampura kalepatan abdi.",
+  "Ya Allah, kuatkeun hate abdi.",
+  "Ya Allah, pasihan kulawarga abdi kasehatan.",
+  "Ya Allah, lancarkeun rezeki anu halal.",
+  "Ya Allah, mugia abdi tiasa ngabantosan sasama.",
+  "Ya Allah, tebihkeun abdi tina sipat sombong.",
+  "Ya Allah, mugia abdi henteu hilap bersyukur.",
+  "Ya Allah, bimbing aku mengambil keputusan.",
+  "Ya Allah, berikan ilmu yang bermanfaat.",
+  "Ya Allah, mudahkan aku memahami hal yang sulit.",
+  "Ya Allah, jadikan pekerjaanku membawa manfaat.",
+  "Ya Allah, jaga amanah yang ada di tanganku.",
+  "Ya Allah, tuntun aku bekerja dengan jujur.",
+  "Ya Allah, beri aku keberanian mengakui kesalahan.",
+  "Ya Allah, bantu aku memperbaiki yang telah rusak.",
+  "Ya Allah, jauhkan aku dari menunda kebaikan.",
+  "Ya Allah, berkahi setiap usaha kecilku.",
+  "Ya Allah, beri aku istirahat yang menenangkan.",
+  "Ya Allah, ringankan beban pikiranku.",
+  "Ya Allah, dampingi aku melewati rasa takut.",
+  "Ya Allah, pulihkan harapanku yang meredup.",
+  "Ya Allah, ajari aku menerima yang tak bisa kuubah.",
+  "Ya Allah, kuatkan aku memperbaiki yang bisa kuubah.",
+  "Ya Allah, jangan biarkan kecewa mengeraskan hatiku.",
+  "Ya Allah, bantu aku memaafkan dengan tulus.",
+  "Ya Allah, dekatkan aku dengan teman yang baik.",
+  "Ya Allah, jadikan aku teman yang bisa dipercaya.",
+  "Ya Allah, abdi nuju seueur pikiran.",
+  "Ya Allah, tenangkeun pikiran abdi.",
+  "Ya Allah, mugia usaha abdi aya mangpaatna.",
+  "Ya Allah, pasihan abdi jalan kaluar anu sae.",
+  "Ya Allah, jaga indung sareng bapa abdi.",
+  "Ya Allah, mugia abdi janten jalmi anu jujur.",
+  "Ya Allah, bantos abdi ngabenerkeun kalepatan.",
+  "Ya Allah, mugia hate abdi langkung ikhlas.",
+  "Ya Allah, pasihan abdi waktos kanggo istirahat.",
+  "Ya Allah, ulah ngantep abdi putus asa.",
+  "Ya Allah, cukupkan kebutuhan orang yang kekurangan.",
+  "Ya Allah, lindungi mereka yang sedang dalam bahaya.",
+  "Ya Allah, tenangkan mereka yang sedang berduka.",
+  "Ya Allah, beri tempat aman bagi yang kehilangan rumah.",
+  "Ya Allah, mudahkan jalan mereka yang mencari nafkah.",
+  "Ya Allah, kuatkan para perawat dan penjaga orang sakit.",
+  "Ya Allah, bahagiakan anak-anak dengan kasih sayang.",
+  "Ya Allah, jaga persaudaraan di antara kami.",
+  "Ya Allah, ajari kami saling menolong.",
+  "Ya Allah, jadikan rumah kami tempat yang tenteram.",
+  "Ya Allah, jauhkan rezekiku dari jalan yang merugikan orang.",
+  "Ya Allah, jadikan kelapangan rezeki sarana berbagi.",
+  "Ya Allah, bantu aku melunasi kewajibanku.",
+  "Ya Allah, ajari aku mengatur titipan-Mu dengan bijak.",
+  "Ya Allah, jauhkan aku dari pemborosan.",
+  "Ya Allah, berkahi makanan di meja kami.",
+  "Ya Allah, tumbuhkan kepedulian kepada tetangga.",
+  "Ya Allah, beri aku hati yang dermawan.",
+  "Ya Allah, jaga niatku saat berbuat baik.",
+  "Ya Allah, terima usaha dan doa kami.",
+  "Ya Allah, mugia rezeki abdi berkah, henteu ngan seueur.",
+  "Ya Allah, abdi hoyong ngabahagiakeun kolot.",
+  "Ya Allah, pasihan abdi tanaga kanggo nuluykeun usaha.",
+  "Ya Allah, mugia abdi tiasa langkung sabar ka sasama.",
+  "Ya Allah, jaga lisan abdi tina nyeri hatekeun batur.",
+  "Ya Allah, bantos abdi diajar kalayan tekun.",
+  "Ya Allah, mugia padamelan abdi lancar sareng halal.",
+  "Ya Allah, pasihan abdi hate anu daek ngahampura.",
+  "Ya Allah, mugia kulawarga abdi salawasna rukun.",
+  "Ya Allah, tuntun abdi nalika bingung.",
+  "Ya Allah, bantu aku menjaga salatku.",
+  "Ya Allah, hadirkan kekhusyukan dalam ibadahku.",
+  "Ya Allah, jangan biarkan kesibukan menjauhkanku dari-Mu.",
+  "Ya Allah, beri aku kesempatan memperbaiki diri.",
+  "Ya Allah, jadikan hari esok lebih baik dari hari ini.",
+  "Ya Allah, ampuni kesalahan yang kusadari maupun tidak.",
+  "Ya Allah, bimbing aku menepati janji.",
+  "Ya Allah, jagalah kami dalam perjalanan.",
+  "Ya Allah, karuniakan akhir hidup yang baik.",
+  "Ya Allah, limpahkan rahmat-Mu kepada kami semua.",
+] as const
+
+export const duaDurationMs = 6500
+export function duaEmoji(text: string) {
+  if (/ampun|hampura|kalepatan|kesalahan/i.test(text)) return "🤲"
+  if (/cape|lelah|istirahat|beban|pikiran/i.test(text)) return "🥺"
+  if (/rezeki|benghar|nafkah|kebutuhan|kewajiban/i.test(text)) return "🌱"
+  if (/keluarga|kulawarga|orang tua|kolot|indung|bapa|rumah/i.test(text)) return "🤍"
+  if (/sehat|sembuh|sakit|pulih/i.test(text)) return "💚"
+  if (/ilmu|belajar|diajar|memahami/i.test(text)) return "📖"
+  if (/syukur|berkah/i.test(text)) return "✨"
+  return "🤲"
+}
+export function selectDuas(random: () => number = Math.random): string[] {
+  const pool: string[] = [...duas]
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.max(0, Math.min(0.999999999, random())) * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, 10)
+}

@@ -10,6 +10,9 @@ Plugin TUI personal: tema graphite/mint, sidebar aktivitas kontekstual, avatar p
 - Pose mengetik minimal 5 detik dan kompres minimal 7,2 detik; label status tetap mengikuti aktivitas sebenarnya.
 - Dock dengan avatar mini ketika sidebar tidak tersedia; detail melalui `/studio-panel`.
 - Notifikasi desktop melalui `node-notifier` dan suara melalui attention API OpenCode.
+- Subagent dapat dilipat per agent; ringkasan menampilkan model sesi anak dan durasi sejak sesi dibuat. Detail aktivitas serta todo diambil dari host setiap 5 detik selama agent aktif, bukan estimasi persentase pekerjaan.
+- Satu panel Progres tugas menggabungkan tugas berjalan, antre, dan selesai.
+- Ruang kerja & berkas memindai Git lokal saat dibuka, termasuk repo anak dengan nama bebas dan worktree `.git` berupa file. Refresh 15 detik; maksimal 4 tingkat/300 folder, tanpa mengikuti symlink atau direktori dependency/build. Angka Git lokal terpisah dari diff sesi OpenCode. `??` direktori mengikuti pengelompokan Git, sehingga jumlah adalah entri status, bukan hitungan seluruh file di dalamnya.
 
 ## Persyaratan dan pemasangan
 
@@ -42,6 +45,8 @@ Avatar menampilkan ilustrasi singkat berdiri, takbir pembuka, bersedekap pada se
 - `/studio-prayer`: jadwal hari ini.
 - `/studio-prayer-test-fajr`, `-dhuhr`, `-asr`, `-maghrib`, `-isha`: tes notifikasi desktop dan ilustrasi sesuai salat (awalan lengkap `studio-prayer-test-`).
 - `/studio-prayer-dismiss`: tutup ilustrasi.
+
+Sesudah salam kanan dan kiri, avatar menengadahkan tangan dan menampilkan sepuluh doa acak dari 100 ungkapan Indonesia/Sunda di `src/duas.ts`. Pilihan tidak berulang dalam satu rangkaian; rangkaian berikutnya dapat memilih doa yang sama. Tiap doa tampil 6,5 detik (total 65 detik), dalam bubble pada sidebar/home dan kutipan ringkas pada dock mini. Teks ini doa sehari-hari, bukan kutipan ayat atau hadis. Angka rakaat salat tidak bertambah karena fase doa ini.
 - `/studio-prayer-stop`: hentikan azan yang sedang diputar.
 - `/studio-prayer-sound`: aktif/nonaktif suara azan; pilihan tersimpan, pengingat visual tetap aktif.
 
