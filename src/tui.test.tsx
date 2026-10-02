@@ -3,7 +3,7 @@ import type { TuiCommand, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import { RGBA } from "@opentui/core"
 import { testRender } from "@opentui/solid"
 import { activityDetail, avatarFrame, avatarPalette, avatarState, compact, recentTools, sessionMetrics, sidebarActivity, type AvatarPose } from "./model"
-import { ResponsiveDock, SidebarPresence, visualFeedback, attentionFeedback, compactionMonitor, waitingReason, ObservedWait, Companion, holdKeyboardPose, InfoCard, Overview, retainActivity, Welcome } from "./tui"
+import { DuaBubble, ResponsiveDock, SidebarPresence, visualFeedback, attentionFeedback, compactionMonitor, waitingReason, ObservedWait, Companion, holdKeyboardPose, InfoCard, Overview, retainActivity, Welcome } from "./tui"
 import { createRoot, createSignal } from "solid-js"
 import type { Event, ToolPart, SessionStatus } from "@opencode-ai/sdk/v2"
 import { createPrayerReminder, prayerReminders } from "./prayer-reminder"
@@ -14,6 +14,54 @@ const api = {
 } as unknown as TuiPluginApi
 
 describe("session data", () => {
+  test("sidebar consolidates latest activity and MCP connections", async () => {
+    const { fixture, setParts, tool } = activityFixture()
+    setParts([tool("read", { status: "completed", input: { filePath: "unique-target.ts" }, title: "Read", output: "done", metadata: {}, time: { start: 1000, end: 2000 } })])
+    const view = await testRender(() => <Overview api={fixture} id="parent" motion={false} mini />, { width: 70, height: 80 })
+    try {
+      await view.renderOnce()
+      const text = view.captureCharFrame()
+      expect(text.match(/unique-target.ts/g)).toHaveLength(1)
+      expect(text.match(/Koneksi MCP/g)).toHaveLength(1)
+      expect(text.match(/local-memory-mcp/g)).toHaveLength(1)
+      expect(text).toContain("Aktivitas & hasil")
+      expect(text).not.toContain("Aktivitas terakhir ·")
+      expect(text).not.toContain("Hasil terakhir")
+    } finally { view.renderer.destroy() }
+  })
+  test("task progress has one panel with active and completed work, no duplicate plan", async () => {
+    const { fixture } = activityFixture()
+    fixture.state.session.todo = () => [
+      { content: "Implement endpoint", status: "in_progress", priority: "high" },
+      { content: "Inspect requirements", status: "completed", priority: "high" },
+    ]
+    const view = await testRender(() => <Overview api={fixture} id="parent" motion={false} mini />, { width: 70, height: 70 })
+    try {
+      await view.renderOnce()
+      const text = view.captureCharFrame()
+      expect(text.match(/Progres tugas/g)).toHaveLength(1)
+      expect(text).not.toContain("Rencana ·")
+      expect(text).toContain("Implement endpoint")
+      expect(text).toContain("Inspect requirements")
+      expect(text.indexOf("Implement endpoint")).toBeLessThan(text.indexOf("Inspect requirements"))
+    } finally { view.renderer.destroy() }
+  })
+  test("prayer bubble shows emoji and updates text in normal and compact modes", async () => {
+    for (const compact of [false, true]) {
+      const [text, setText] = createSignal("YaAllah abdi Cape")
+      const view = await testRender(() => <DuaBubble api={api} text={text()} compact={compact} />, { width: 38, height: 12 })
+      try {
+        await view.renderOnce()
+        expect(view.captureCharFrame()).toContain("🥺")
+        expect(view.captureCharFrame()).toContain("abdi Cape")
+        setText("Ya Allah Ampuni dosaku")
+        await view.renderOnce()
+        expect(view.captureCharFrame()).toContain("🤲")
+        expect(view.captureCharFrame()).toContain("Ampuni dosaku")
+        expect(view.captureCharFrame()).not.toContain("abdi Cape")
+      } finally { view.renderer.destroy() }
+    }
+  })
   test("prayer appears on normal and mini companion while attention keeps priority", async () => {
     const { fixture } = activityFixture()
     let commands: TuiCommand[] = []
@@ -571,7 +619,7 @@ describe("collapsible information cards", () => {
     try {
       await view.renderOnce()
       const frame = view.captureCharFrame()
-      for (const title of ["Laporan token provider", "Progres tugas", "Koneksi MCP", "Ruang kerja & berkas", "/workspace", "Belum ada perubahan"])
+      for (const title of ["Laporan token provider", "Progres tugas", "Koneksi MCP", "Ruang kerja & berkas", "/workspace", "Git lokal"])
         expect(frame).toContain(title)
       expect(frame).not.toContain("Terhubung bukan berarti")
     } finally { view.renderer.destroy() }
@@ -664,7 +712,7 @@ describe("responsive Studio", () => {
       try {
         await details.renderOnce()
         expect(details.captureCharFrame()).toContain("Detail sesi")
-        expect(details.captureCharFrame()).toContain("Hasil terakhir")
+        expect(details.captureCharFrame()).toContain("Aktivitas & hasil")
         expect(details.captureCharFrame()).toContain("Koneksi MCP")
       } finally { details.renderer.destroy() }
     } finally { view.renderer.destroy() }
